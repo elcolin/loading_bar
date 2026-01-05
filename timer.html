@@ -52,9 +52,32 @@
       background: linear-gradient(90deg, #ff9800, #ffc107);
     }
 
+    .bar.total {
+      background: linear-gradient(90deg, #2196f3, #64b5f6);
+    }
+
+    .progress-section {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: center;
+      width: 300px;
+    }
+
+    .progress-label {
+      font-size: 11px;
+      opacity: 0.6;
+      text-align: center;
+    }
+
     .time {
       font-size: 14px;
       opacity: 0.8;
+    }
+
+    .time.secondary {
+      font-size: 12px;
+      opacity: 0.5;
     }
 
     .checkpoint-config {
@@ -173,11 +196,22 @@
   <button id="skipBtn" style="display: none; background: #f44336;">Passer</button>
 </div>
 
-  <div class="bar-container">
-    <div class="bar" id="bar"></div>
+  <div class="progress-section">
+    <div class="progress-label" id="checkpointLabel">Prochain checkpoint</div>
+    <div class="bar-container">
+      <div class="bar" id="bar"></div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label">Temps total</div>
+    <div class="bar-container">
+      <div class="bar total" id="totalBar"></div>
+    </div>
   </div>
 
   <div class="time" id="timeDisplay"></div>
+  <div class="time secondary" id="totalTimeDisplay" aria-label="Temps total restant"></div>
 
   <div class="notes-section">
     <div class="notes-header" id="notesHeader">
@@ -314,6 +348,12 @@ document.getElementById("timeInput").addEventListener("keydown", (event) => {
     startTimer();
   }
 });
+
+function formatTime(seconds) {
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  return `${min}:${sec.toString().padStart(2, "0")}`;
+}
 
 async function requestNotificationPermission() {
   if (!("Notification" in window)) {
@@ -481,13 +521,24 @@ function skipPhase() {
       }
 
       const bar = document.getElementById("bar");
+      const totalBar = document.getElementById("totalBar");
       const display = document.getElementById("timeDisplay");
+      const totalDisplay = document.getElementById("totalTimeDisplay");
+      const checkpointLabel = document.getElementById("checkpointLabel");
 
       let remaining = totalSeconds;
       workTimeElapsed = 0;
       isInCheckpoint = false;
       bar.style.width = "0%";
+      totalBar.style.width = "0%";
       bar.classList.remove("checkpoint");
+
+      // Update label based on checkpoint configuration
+      if (checkpointEnabled) {
+        checkpointLabel.textContent = "Prochain checkpoint";
+      } else {
+        checkpointLabel.textContent = "Progression";
+      }
 
       interval = setInterval(() => {
         // Skip timer updates if paused
@@ -501,9 +552,14 @@ function skipPhase() {
           const progress = ((checkpointDurationSeconds - checkpointRemaining) / checkpointDurationSeconds) * 100;
           bar.style.width = progress + "%";
 
-          const min = Math.floor(checkpointRemaining / 60);
-          const sec = checkpointRemaining % 60;
-          display.textContent = `Pause checkpoint : ${min}:${sec.toString().padStart(2, "0")}`;
+          // Update total progress bar
+          const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
+          totalBar.style.width = totalProgress + "%";
+
+          display.textContent = `Pause checkpoint : ${formatTime(checkpointRemaining)}`;
+
+          // Show total remaining time
+          totalDisplay.textContent = `Temps total restant : ${formatTime(remaining)}`;
 
           if (checkpointRemaining <= 0) {
             // End checkpoint, resume work
@@ -518,18 +574,33 @@ function skipPhase() {
           remaining--;
           workTimeElapsed++;
 
-          const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
-          bar.style.width = progress + "%";
+          // Update total progress bar
+          const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
+          totalBar.style.width = totalProgress + "%";
 
-          const min = Math.floor(remaining / 60);
-          const sec = remaining % 60;
-          display.textContent = `Temps restant : ${min}:${sec.toString().padStart(2, "0")}`;
+          // Display time until next checkpoint (or total time if no checkpoint)
+          if (checkpointEnabled) {
+            // Time until next checkpoint
+            const timeUntilCheckpoint = Math.max(0, checkpointIntervalSeconds - workTimeElapsed);
+            const checkpointProgress = ((workTimeElapsed) / checkpointIntervalSeconds) * 100;
+            bar.style.width = checkpointProgress + "%";
+            display.textContent = `Prochain checkpoint dans : ${formatTime(timeUntilCheckpoint)}`;
+          } else {
+            // No checkpoint, show total remaining time
+            const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
+            bar.style.width = progress + "%";
+            display.textContent = `Temps restant : ${formatTime(remaining)}`;
+          }
+
+          // Always show total remaining time in secondary display
+          totalDisplay.textContent = `Temps total restant : ${formatTime(remaining)}`;
 
           // Check if checkpoint should trigger
           if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
             isInCheckpoint = true;
             checkpointRemaining = checkpointDurationSeconds;
             bar.classList.add("checkpoint");
+            bar.style.width = "0%";
             const durationMin = Math.floor(checkpointDurationSeconds / 60);
             const durationSec = checkpointDurationSeconds % 60;
             const durationText = durationMin > 0 
@@ -542,7 +613,9 @@ function skipPhase() {
           if (remaining <= 0) {
             clearInterval(interval);
             display.textContent = "Terminé.";
+            totalDisplay.textContent = "";
             bar.style.width = "100%";
+            totalBar.style.width = "100%";
             bar.classList.remove("checkpoint");
           }
         }
