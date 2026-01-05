@@ -85,7 +85,10 @@
 
 <button id="startBtn">Démarrer</button>
 
-
+<div style="display: flex; gap: 10px; justify-content: center;">
+  <button id="pauseBtn" style="display: none; background: #ff9800;">Pause</button>
+  <button id="skipBtn" style="display: none; background: #f44336;">Passer</button>
+</div>
 
   <div class="bar-container">
     <div class="bar" id="bar"></div>
@@ -96,6 +99,7 @@
   <script>
 let interval = null;
 let started = false;
+let isPaused = false;
 let notificationPermissionGranted = false;
 
 // Checkpoint state
@@ -106,7 +110,13 @@ let checkpointIntervalSeconds = 0;
 let isInCheckpoint = false;
 let checkpointRemaining = 0;
 
+// Store timer state for pause/resume
+let totalSeconds = 0;
+let remaining = 0;
+
 document.getElementById("startBtn").addEventListener("click", startTimer);
+document.getElementById("pauseBtn").addEventListener("click", togglePause);
+document.getElementById("skipBtn").addEventListener("click", skipPhase);
 document.getElementById("notificationBtn").addEventListener("click", requestNotificationPermission);
 
 document.getElementById("timeInput").addEventListener("keydown", (event) => {
@@ -188,16 +198,73 @@ function parseTime(value) {
   return totalSeconds > 0 ? totalSeconds : null;
 }
 
+function togglePause() {
+  const pauseBtn = document.getElementById("pauseBtn");
+  
+  if (isPaused) {
+    // Resume
+    isPaused = false;
+    pauseBtn.textContent = "Pause";
+    pauseBtn.style.background = "#ff9800";
+    console.log("Timer resumed");
+  } else {
+    // Pause
+    isPaused = true;
+    pauseBtn.textContent = "Reprendre";
+    pauseBtn.style.background = "#4caf50";
+    console.log("Timer paused");
+  }
+}
+
+function skipPhase() {
+  console.log("Skip phase called. isInCheckpoint:", isInCheckpoint);
+  
+  if (isInCheckpoint) {
+    // Skip checkpoint - go back to work
+    isInCheckpoint = false;
+    workTimeElapsed = 0;
+    checkpointRemaining = 0;
+    const bar = document.getElementById("bar");
+    bar.classList.remove("checkpoint");
+    console.log("Checkpoint skipped, resuming work");
+  } else {
+    // Skip work phase - trigger checkpoint if enabled, or do nothing
+    if (checkpointEnabled) {
+      isInCheckpoint = true;
+      checkpointRemaining = checkpointDurationSeconds;
+      const bar = document.getElementById("bar");
+      bar.classList.add("checkpoint");
+      bar.style.width = "0%";
+      const durationMin = Math.floor(checkpointDurationSeconds / 60);
+      const durationSec = checkpointDurationSeconds % 60;
+      const durationText = durationMin > 0 
+        ? `${durationMin} minute(s)${durationSec > 0 ? ` et ${durationSec} seconde(s)` : ''}`
+        : `${durationSec} seconde(s)`;
+      console.log("Work phase skipped, starting checkpoint");
+      sendNotification("Pause checkpoint !", `Prenez une pause de ${durationText}.`);
+    } else {
+      console.log("No checkpoint configured, cannot skip work phase");
+    }
+  }
+}
+
 
     function startTimer() {
       clearInterval(interval);
+      isPaused = false;
 
       const input = document.getElementById("timeInput").value.trim();
-      const totalSeconds = parseTime(input);
+      totalSeconds = parseTime(input);
       if (!totalSeconds) {
         alert("Format invalide. Utilise par exemple 5m, 1h ou 30s.");
         return;
       }
+
+      // Show pause and skip buttons
+      document.getElementById("pauseBtn").style.display = "inline-block";
+      document.getElementById("pauseBtn").textContent = "Pause";
+      document.getElementById("pauseBtn").style.background = "#ff9800";
+      document.getElementById("skipBtn").style.display = "inline-block";
 
       // Parse checkpoint configuration
       const checkpointDurationInput = document.getElementById("checkpointDuration").value.trim();
@@ -233,6 +300,11 @@ function parseTime(value) {
       bar.classList.remove("checkpoint");
 
       interval = setInterval(() => {
+        // Skip timer updates if paused
+        if (isPaused) {
+          return;
+        }
+        
         if (isInCheckpoint) {
           // Checkpoint timer
           checkpointRemaining--;
