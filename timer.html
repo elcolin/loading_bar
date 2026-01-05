@@ -68,6 +68,89 @@
       font-size: 12px;
       opacity: 0.7;
     }
+
+    .notes-section {
+      margin-top: 30px;
+      width: 600px;
+      max-width: 90%;
+    }
+
+    .notes-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      padding: 10px;
+      background: #222;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .notes-header:hover {
+      background: #2a2a2a;
+    }
+
+    .notes-toggle {
+      font-size: 20px;
+      transition: transform 0.3s;
+    }
+
+    .notes-toggle.open {
+      transform: rotate(180deg);
+    }
+
+    .notes-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .notes-content.open {
+      max-height: 600px;
+    }
+
+    .notes-textarea {
+      width: 100%;
+      height: 200px;
+      padding: 15px;
+      font-size: 14px;
+      background: #1a1a1a;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 6px;
+      resize: vertical;
+      box-sizing: border-box;
+      font-family: 'Courier New', monospace;
+    }
+
+    .notes-textarea:focus {
+      outline: none;
+      border-color: #4caf50;
+    }
+
+    .notes-info {
+      font-size: 11px;
+      opacity: 0.6;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .notes-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+
+    .notes-actions button {
+      font-size: 13px;
+      padding: 8px 15px;
+      background: #555;
+    }
+
+    .notes-actions button:hover {
+      background: #666;
+    }
   </style>
 </head>
 <body>
@@ -96,6 +179,27 @@
 
   <div class="time" id="timeDisplay"></div>
 
+  <div class="notes-section">
+    <div class="notes-header" id="notesHeader">
+      <span>📝 Notes personnelles</span>
+      <span class="notes-toggle" id="notesToggle">▼</span>
+    </div>
+    <div class="notes-content" id="notesContent">
+      <textarea 
+        class="notes-textarea" 
+        id="notesTextarea" 
+        placeholder="Écrivez vos notes ici... Elles sont automatiquement sauvegardées dans votre navigateur."></textarea>
+      <div class="notes-actions">
+        <button id="exportNotesBtn">📥 Exporter les notes</button>
+        <button id="clearNotesBtn">🗑️ Effacer les notes</button>
+      </div>
+      <div class="notes-info">
+        💡 Les notes sont sauvegardées automatiquement dans votre navigateur (localStorage).
+        Exportez-les dans un fichier pour les sauvegarder de manière permanente.
+      </div>
+    </div>
+  </div>
+
   <script>
 let interval = null;
 let started = false;
@@ -113,6 +217,90 @@ let checkpointRemaining = 0;
 // Store timer state for pause/resume
 let totalSeconds = 0;
 let remaining = 0;
+
+// Notes functionality
+const NOTES_STORAGE_KEY = 'timer_app_notes';
+let notesOpen = false;
+let autoSaveTimeout = null;
+
+// Initialize notes on page load
+document.addEventListener('DOMContentLoaded', initializeNotes);
+
+function initializeNotes() {
+  const notesTextarea = document.getElementById('notesTextarea');
+  const notesHeader = document.getElementById('notesHeader');
+  const notesToggle = document.getElementById('notesToggle');
+  const notesContent = document.getElementById('notesContent');
+  const exportBtn = document.getElementById('exportNotesBtn');
+  const clearBtn = document.getElementById('clearNotesBtn');
+
+  // Load saved notes from localStorage
+  const savedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+  if (savedNotes) {
+    notesTextarea.value = savedNotes;
+  }
+
+  // Toggle notes section
+  notesHeader.addEventListener('click', () => {
+    notesOpen = !notesOpen;
+    if (notesOpen) {
+      notesContent.classList.add('open');
+      notesToggle.classList.add('open');
+    } else {
+      notesContent.classList.remove('open');
+      notesToggle.classList.remove('open');
+    }
+  });
+
+  // Auto-save notes with debounce
+  notesTextarea.addEventListener('input', () => {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      localStorage.setItem(NOTES_STORAGE_KEY, notesTextarea.value);
+      console.log('Notes auto-saved');
+    }, 500); // Save after 500ms of no typing
+  });
+
+  // Export notes to file
+  exportBtn.addEventListener('click', exportNotes);
+
+  // Clear notes
+  clearBtn.addEventListener('click', clearNotes);
+}
+
+function exportNotes() {
+  const notesTextarea = document.getElementById('notesTextarea');
+  const notes = notesTextarea.value;
+  
+  if (!notes.trim()) {
+    alert('Aucune note à exporter.');
+    return;
+  }
+
+  // Create a blob with the notes content
+  const blob = new Blob([notes], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  
+  // Create a temporary link and trigger download
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `notes_${new Date().toISOString().slice(0, 10)}.notes.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  console.log('Notes exported successfully');
+}
+
+function clearNotes() {
+  if (confirm('Êtes-vous sûr de vouloir effacer toutes vos notes ? Cette action est irréversible.')) {
+    const notesTextarea = document.getElementById('notesTextarea');
+    notesTextarea.value = '';
+    localStorage.removeItem(NOTES_STORAGE_KEY);
+    console.log('Notes cleared');
+  }
+}
 
 document.getElementById("startBtn").addEventListener("click", startTimer);
 document.getElementById("pauseBtn").addEventListener("click", togglePause);

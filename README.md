@@ -10,6 +10,7 @@ Un minuteur web élégant avec barre de progression, système de pauses automati
 - 🔔 **Notifications navigateur** : Recevez des alertes même quand l'onglet n'est pas actif
 - ☕ **Système de checkpoints** : Pauses automatiques à intervalles réguliers
 - 📊 **Barre de progression visuelle** : Suivez votre avancement en temps réel
+- 📝 **Notes personnelles** : Prenez des notes pendant vos sessions de travail avec sauvegarde automatique
 - 🎨 **Interface élégante** : Design sombre et moderne
 
 ## Installation et Utilisation
@@ -195,6 +196,41 @@ Durée pause : 3s
 Intervalle : 10s
 ```
 Pour tester rapidement les fonctionnalités (10s de travail, 3s de pause).
+
+## Notes Personnelles
+
+### Utilisation des Notes
+
+L'application intègre un système de prise de notes pour vous permettre de garder une trace de vos pensées, tâches et informations importantes pendant vos sessions de travail.
+
+1. **Ouvrir les notes**
+   - Cliquez sur "📝 Notes personnelles" en bas de l'interface
+   - La section se déploie pour afficher le champ de saisie
+
+2. **Écrire des notes**
+   - Tapez directement dans la zone de texte
+   - Vos notes sont automatiquement sauvegardées après 500ms d'inactivité
+   - Les notes sont stockées localement dans votre navigateur (localStorage)
+
+3. **Exporter les notes**
+   - Cliquez sur "📥 Exporter les notes"
+   - Un fichier `notes_YYYY-MM-DD.notes.txt` sera téléchargé
+   - Sauvegardez ce fichier dans le dossier `notes/` du projet (il sera ignoré par Git)
+
+4. **Effacer les notes**
+   - Cliquez sur "🗑️ Effacer les notes"
+   - Confirmez l'action (irréversible)
+
+### Protection de la Vie Privée
+
+- Les notes ne sont **jamais envoyées sur Internet** - elles restent sur votre ordinateur
+- Le fichier `.gitignore` exclut automatiquement :
+  - Le dossier `notes/` (pour vos fichiers exportés)
+  - Les fichiers `*.notes.txt` 
+  - Les fichiers `*.private.txt`
+- Vos notes personnelles ne seront jamais commitées dans le dépôt Git
+
+![Notes personnelles](https://github.com/user-attachments/assets/795c8ecb-b848-4b1f-af7c-0aa89487f4ab)
 
 ## Compatibilité Navigateur
 

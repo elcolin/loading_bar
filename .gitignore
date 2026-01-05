@@ -1,0 +1,10 @@
+# Notes directory - excluded to protect private information
+notes/
+*.notes.txt
+*.private.txt
+
+# Editor backup files
+*~
+*.swp
+*.swo
+.DS_Store
