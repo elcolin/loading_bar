@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Minuteur avec barre de chargement</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    button {
+      cursor: pointer;
+      background: #4caf50;
+      color: white;
+    }
+
+    .bar-container {
+      width: 300px;
+      height: 20px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      transition: width 0.1s linear;
+    }
+
+    .time {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+<input id="timeInput" placeholder="Ex: 1h28m0s">
+
+<button id="startBtn">Démarrer</button>
+
+
+
+  <div class="bar-container">
+    <div class="bar" id="bar"></div>
+  </div>
+
+  <div class="time" id="timeDisplay"></div>
+
+  <script>
+let interval = null;
+let started = false;
+document.getElementById("startBtn").addEventListener("click", startTimer);
+
+document.getElementById("timeInput").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    startTimer();
+  }
+});
+
+function parseTime(value) {
+  const regex = /(\d+)\s*(h|m|s)/gi;
+  let totalSeconds = 0;
+  let match;
+
+  while ((match = regex.exec(value)) !== null) {
+    const amount = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+
+    if (unit === "h") totalSeconds += amount * 3600;
+    if (unit === "m") totalSeconds += amount * 60;
+    if (unit === "s") totalSeconds += amount;
+  }
+
+  return totalSeconds > 0 ? totalSeconds : null;
+}
+
+
+    function startTimer() {
+      clearInterval(interval);
+
+      const input = document.getElementById("timeInput").value.trim();
+      const totalSeconds = parseTime(input);
+      if (!totalSeconds) {
+        alert("Format invalide. Utilise par exemple 5m, 1h ou 30s.");
+        return;
+      }
+
+      const bar = document.getElementById("bar");
+      const display = document.getElementById("timeDisplay");
+
+      let remaining = totalSeconds;
+      bar.style.width = "0%";
+
+      interval = setInterval(() => {
+        remaining--;
+        const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
+        bar.style.width = progress + "%";
+
+        const min = Math.floor(remaining / 60);
+        const sec = remaining % 60;
+        display.textContent = `Temps restant : ${min}:${sec.toString().padStart(2, "0")}`;
+
+        if (remaining <= 0) {
+          clearInterval(interval);
+          display.textContent = "Terminé.";
+          bar.style.width = "100%";
+        }
+      }, 1000);
+    }
+  </script>
+
+</body>
+</html>
