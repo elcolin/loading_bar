@@ -120,16 +120,21 @@ async function requestNotificationPermission() {
     return;
   }
 
-  const permission = await Notification.requestPermission();
-  if (permission === "granted") {
-    notificationPermissionGranted = true;
-    alert("Notifications activées !");
-    new Notification("Notifications actives", {
-      body: "Vous recevrez une notification lors des pauses checkpoint.",
-      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
-    });
-  } else {
-    alert("Permission de notification refusée.");
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      notificationPermissionGranted = true;
+      alert("Notifications activées !");
+      new Notification("Notifications actives", {
+        body: "Vous recevrez une notification lors des pauses checkpoint.",
+        icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
+      });
+    } else {
+      alert("Permission de notification refusée.");
+    }
+  } catch (error) {
+    console.error("Erreur lors de la demande de permission:", error);
+    alert("Une erreur est survenue lors de la demande de permission.");
   }
 }
 
@@ -231,7 +236,12 @@ function parseTime(value) {
             isInCheckpoint = true;
             checkpointRemaining = checkpointDurationSeconds;
             bar.classList.add("checkpoint");
-            sendNotification("Pause checkpoint !", `Prenez une pause de ${Math.floor(checkpointDurationSeconds / 60)} minute(s).`);
+            const durationMin = Math.floor(checkpointDurationSeconds / 60);
+            const durationSec = checkpointDurationSeconds % 60;
+            const durationText = durationMin > 0 
+              ? `${durationMin} minute(s)${durationSec > 0 ? ` et ${durationSec} seconde(s)` : ''}`
+              : `${durationSec} seconde(s)`;
+            sendNotification("Pause checkpoint !", `Prenez une pause de ${durationText}.`);
           }
 
           if (remaining <= 0) {
