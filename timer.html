@@ -57,6 +57,11 @@
       opacity: 0.8;
     }
 
+    .time.secondary {
+      font-size: 12px;
+      opacity: 0.5;
+    }
+
     .checkpoint-config {
       display: flex;
       flex-direction: column;
@@ -95,7 +100,7 @@
   </div>
 
   <div class="time" id="timeDisplay"></div>
-  <div class="time" id="totalTimeDisplay" style="opacity: 0.5; font-size: 12px;"></div>
+  <div class="time secondary" id="totalTimeDisplay"></div>
 
   <script>
 let interval = null;
@@ -125,6 +130,12 @@ document.getElementById("timeInput").addEventListener("keydown", (event) => {
     startTimer();
   }
 });
+
+function formatTime(seconds) {
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  return `${min}:${sec.toString().padStart(2, "0")}`;
+}
 
 async function requestNotificationPermission() {
   if (!("Notification" in window)) {
@@ -313,14 +324,10 @@ function skipPhase() {
           const progress = ((checkpointDurationSeconds - checkpointRemaining) / checkpointDurationSeconds) * 100;
           bar.style.width = progress + "%";
 
-          const min = Math.floor(checkpointRemaining / 60);
-          const sec = checkpointRemaining % 60;
-          display.textContent = `Pause checkpoint : ${min}:${sec.toString().padStart(2, "0")}`;
+          display.textContent = `Pause checkpoint : ${formatTime(checkpointRemaining)}`;
 
           // Show total remaining time
-          const totalMin = Math.floor(remaining / 60);
-          const totalSec = remaining % 60;
-          totalDisplay.textContent = `Temps total restant : ${totalMin}:${totalSec.toString().padStart(2, "0")}`;
+          totalDisplay.textContent = `Temps total restant : ${formatTime(remaining)}`;
 
           if (checkpointRemaining <= 0) {
             // End checkpoint, resume work
@@ -339,24 +346,17 @@ function skipPhase() {
           bar.style.width = progress + "%";
 
           // Display time until next checkpoint (or total time if no checkpoint)
-          let displayTime;
           if (checkpointEnabled) {
             // Time until next checkpoint
             const timeUntilCheckpoint = checkpointIntervalSeconds - workTimeElapsed;
-            const min = Math.floor(timeUntilCheckpoint / 60);
-            const sec = timeUntilCheckpoint % 60;
-            display.textContent = `Prochain checkpoint dans : ${min}:${sec.toString().padStart(2, "0")}`;
+            display.textContent = `Prochain checkpoint dans : ${formatTime(timeUntilCheckpoint)}`;
           } else {
             // No checkpoint, show total remaining time
-            const min = Math.floor(remaining / 60);
-            const sec = remaining % 60;
-            display.textContent = `Temps restant : ${min}:${sec.toString().padStart(2, "0")}`;
+            display.textContent = `Temps restant : ${formatTime(remaining)}`;
           }
 
           // Always show total remaining time in secondary display
-          const totalMin = Math.floor(remaining / 60);
-          const totalSec = remaining % 60;
-          totalDisplay.textContent = `Temps total restant : ${totalMin}:${totalSec.toString().padStart(2, "0")}`;
+          totalDisplay.textContent = `Temps total restant : ${formatTime(remaining)}`;
 
           // Check if checkpoint should trigger
           if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
