@@ -29,6 +29,10 @@
       color: white;
     }
 
+    button.secondary {
+      background: #2196f3;
+    }
+
     .bar-container {
       width: 300px;
       height: 20px;
@@ -44,15 +48,39 @@
       transition: width 0.1s linear;
     }
 
+    .bar.checkpoint {
+      background: linear-gradient(90deg, #ff9800, #ffc107);
+    }
+
     .time {
       font-size: 14px;
       opacity: 0.8;
+    }
+
+    .checkpoint-config {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .checkpoint-label {
+      font-size: 12px;
+      opacity: 0.7;
     }
   </style>
 </head>
 <body>
 
 <input id="timeInput" placeholder="Ex: 1h28m0s">
+
+<div class="checkpoint-config">
+  <div class="checkpoint-label">Configuration des pauses (checkpoint)</div>
+  <input id="checkpointDuration" placeholder="Durée pause: 5m">
+  <input id="checkpointInterval" placeholder="Intervalle: 25m">
+</div>
+
+<button id="notificationBtn" class="secondary">Activer les notifications</button>
 
 <button id="startBtn">Démarrer</button>
 
@@ -67,13 +95,52 @@
   <script>
 let interval = null;
 let started = false;
+let notificationPermissionGranted = false;
+
+// Checkpoint state
+let checkpointEnabled = false;
+let workTimeElapsed = 0;
+let checkpointDurationSeconds = 0;
+let checkpointIntervalSeconds = 0;
+let isInCheckpoint = false;
+let checkpointRemaining = 0;
+
 document.getElementById("startBtn").addEventListener("click", startTimer);
+document.getElementById("notificationBtn").addEventListener("click", requestNotificationPermission);
 
 document.getElementById("timeInput").addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     startTimer();
   }
 });
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) {
+    alert("Ce navigateur ne supporte pas les notifications.");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
+    notificationPermissionGranted = true;
+    alert("Notifications activées !");
+    new Notification("Notifications actives", {
+      body: "Vous recevrez une notification lors des pauses checkpoint.",
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
+    });
+  } else {
+    alert("Permission de notification refusée.");
+  }
+}
+
+function sendNotification(title, body) {
+  if (notificationPermissionGranted && "Notification" in window) {
+    new Notification(title, {
+      body: body,
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>☕</text></svg>"
+    });
+  }
+}
 
 function parseTime(value) {
   const regex = /(\d+)\s*(h|m|s)/gi;
@@ -103,25 +170,76 @@ function parseTime(value) {
         return;
       }
 
+      // Parse checkpoint configuration
+      const checkpointDurationInput = document.getElementById("checkpointDuration").value.trim();
+      const checkpointIntervalInput = document.getElementById("checkpointInterval").value.trim();
+
+      if (checkpointDurationInput && checkpointIntervalInput) {
+        checkpointDurationSeconds = parseTime(checkpointDurationInput);
+        checkpointIntervalSeconds = parseTime(checkpointIntervalInput);
+
+        if (checkpointDurationSeconds && checkpointIntervalSeconds) {
+          checkpointEnabled = true;
+        } else {
+          alert("Format de checkpoint invalide. Désactivation des checkpoints.");
+          checkpointEnabled = false;
+        }
+      } else {
+        checkpointEnabled = false;
+      }
+
       const bar = document.getElementById("bar");
       const display = document.getElementById("timeDisplay");
 
       let remaining = totalSeconds;
+      workTimeElapsed = 0;
+      isInCheckpoint = false;
       bar.style.width = "0%";
+      bar.classList.remove("checkpoint");
 
       interval = setInterval(() => {
-        remaining--;
-        const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
-        bar.style.width = progress + "%";
+        if (isInCheckpoint) {
+          // Checkpoint timer
+          checkpointRemaining--;
+          const progress = ((checkpointDurationSeconds - checkpointRemaining) / checkpointDurationSeconds) * 100;
+          bar.style.width = progress + "%";
 
-        const min = Math.floor(remaining / 60);
-        const sec = remaining % 60;
-        display.textContent = `Temps restant : ${min}:${sec.toString().padStart(2, "0")}`;
+          const min = Math.floor(checkpointRemaining / 60);
+          const sec = checkpointRemaining % 60;
+          display.textContent = `Pause checkpoint : ${min}:${sec.toString().padStart(2, "0")}`;
 
-        if (remaining <= 0) {
-          clearInterval(interval);
-          display.textContent = "Terminé.";
-          bar.style.width = "100%";
+          if (checkpointRemaining <= 0) {
+            // End checkpoint, resume work
+            isInCheckpoint = false;
+            workTimeElapsed = 0;
+            bar.classList.remove("checkpoint");
+          }
+        } else {
+          // Work timer
+          remaining--;
+          workTimeElapsed++;
+
+          const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
+          bar.style.width = progress + "%";
+
+          const min = Math.floor(remaining / 60);
+          const sec = remaining % 60;
+          display.textContent = `Temps restant : ${min}:${sec.toString().padStart(2, "0")}`;
+
+          // Check if checkpoint should trigger
+          if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
+            isInCheckpoint = true;
+            checkpointRemaining = checkpointDurationSeconds;
+            bar.classList.add("checkpoint");
+            sendNotification("Pause checkpoint !", `Prenez une pause de ${Math.floor(checkpointDurationSeconds / 60)} minute(s).`);
+          }
+
+          if (remaining <= 0) {
+            clearInterval(interval);
+            display.textContent = "Terminé.";
+            bar.style.width = "100%";
+            bar.classList.remove("checkpoint");
+          }
         }
       }, 1000);
     }
