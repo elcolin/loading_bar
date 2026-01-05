@@ -100,7 +100,7 @@
   </div>
 
   <div class="time" id="timeDisplay"></div>
-  <div class="time secondary" id="totalTimeDisplay"></div>
+  <div class="time secondary" id="totalTimeDisplay" aria-label="Temps total restant"></div>
 
   <script>
 let interval = null;
@@ -348,7 +348,7 @@ function skipPhase() {
           // Display time until next checkpoint (or total time if no checkpoint)
           if (checkpointEnabled) {
             // Time until next checkpoint
-            const timeUntilCheckpoint = checkpointIntervalSeconds - workTimeElapsed;
+            const timeUntilCheckpoint = Math.max(0, checkpointIntervalSeconds - workTimeElapsed);
             display.textContent = `Prochain checkpoint dans : ${formatTime(timeUntilCheckpoint)}`;
           } else {
             // No checkpoint, show total remaining time
