@@ -81,6 +81,7 @@
 </div>
 
 <button id="notificationBtn" class="secondary">Activer les notifications</button>
+<div class="checkpoint-label" id="notificationStatus" style="color: #ff9800; display: none;">⚠️ Activez les notifications pour recevoir des alertes</div>
 
 <button id="startBtn">Démarrer</button>
 
@@ -124,13 +125,15 @@ async function requestNotificationPermission() {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
       notificationPermissionGranted = true;
-      alert("Notifications activées !");
+      document.getElementById("notificationStatus").style.display = "none";
+      document.getElementById("notificationBtn").textContent = "✓ Notifications activées";
+      document.getElementById("notificationBtn").style.background = "#4caf50";
       new Notification("Notifications actives", {
         body: "Vous recevrez une notification lors des pauses checkpoint.",
         icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
       });
     } else {
-      alert("Permission de notification refusée.");
+      alert("Permission de notification refusée. Les notifications ne fonctionneront pas.");
     }
   } catch (error) {
     console.error("Erreur lors de la demande de permission:", error);
@@ -139,6 +142,10 @@ async function requestNotificationPermission() {
 }
 
 function sendNotification(title, body) {
+  console.log("sendNotification appelé:", title, body);
+  console.log("Permission accordée:", notificationPermissionGranted);
+  console.log("Notification API disponible:", "Notification" in window);
+  
   if (notificationPermissionGranted && "Notification" in window) {
     const options = {
       body: body,
@@ -153,7 +160,14 @@ function sendNotification(title, body) {
       options.vibrate = [200, 100, 200];
     }
     
-    new Notification(title, options);
+    try {
+      const notification = new Notification(title, options);
+      console.log("Notification créée avec succès");
+    } catch (error) {
+      console.error("Erreur lors de la création de la notification:", error);
+    }
+  } else {
+    console.warn("Notifications non disponibles ou permission non accordée");
   }
 }
 
@@ -195,6 +209,12 @@ function parseTime(value) {
 
         if (checkpointDurationSeconds && checkpointIntervalSeconds) {
           checkpointEnabled = true;
+          
+          // Warn if notifications are not enabled
+          if (!notificationPermissionGranted) {
+            document.getElementById("notificationStatus").style.display = "block";
+            alert("⚠️ Astuce : Cliquez sur 'Activer les notifications' pour recevoir des alertes lors des pauses checkpoint !");
+          }
         } else {
           alert("Format de checkpoint invalide. Désactivation des checkpoints.");
           checkpointEnabled = false;
@@ -228,6 +248,8 @@ function parseTime(value) {
             isInCheckpoint = false;
             workTimeElapsed = 0;
             bar.classList.remove("checkpoint");
+            sendNotification("Pause terminée !", "Reprise du travail. Bon courage !");
+            console.log("Checkpoint terminé, reprise du travail");
           }
         } else {
           // Work timer
@@ -251,6 +273,7 @@ function parseTime(value) {
             const durationText = durationMin > 0 
               ? `${durationMin} minute(s)${durationSec > 0 ? ` et ${durationSec} seconde(s)` : ''}`
               : `${durationSec} seconde(s)`;
+            console.log("Checkpoint déclenché ! Notification envoyée.");
             sendNotification("Pause checkpoint !", `Prenez une pause de ${durationText}.`);
           }
 
