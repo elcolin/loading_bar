@@ -95,6 +95,7 @@
   </div>
 
   <div class="time" id="timeDisplay"></div>
+  <div class="time" id="totalTimeDisplay" style="opacity: 0.5; font-size: 12px;"></div>
 
   <script>
 let interval = null;
@@ -292,6 +293,7 @@ function skipPhase() {
 
       const bar = document.getElementById("bar");
       const display = document.getElementById("timeDisplay");
+      const totalDisplay = document.getElementById("totalTimeDisplay");
 
       let remaining = totalSeconds;
       workTimeElapsed = 0;
@@ -315,6 +317,11 @@ function skipPhase() {
           const sec = checkpointRemaining % 60;
           display.textContent = `Pause checkpoint : ${min}:${sec.toString().padStart(2, "0")}`;
 
+          // Show total remaining time
+          const totalMin = Math.floor(remaining / 60);
+          const totalSec = remaining % 60;
+          totalDisplay.textContent = `Temps total restant : ${totalMin}:${totalSec.toString().padStart(2, "0")}`;
+
           if (checkpointRemaining <= 0) {
             // End checkpoint, resume work
             isInCheckpoint = false;
@@ -331,9 +338,25 @@ function skipPhase() {
           const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
           bar.style.width = progress + "%";
 
-          const min = Math.floor(remaining / 60);
-          const sec = remaining % 60;
-          display.textContent = `Temps restant : ${min}:${sec.toString().padStart(2, "0")}`;
+          // Display time until next checkpoint (or total time if no checkpoint)
+          let displayTime;
+          if (checkpointEnabled) {
+            // Time until next checkpoint
+            const timeUntilCheckpoint = checkpointIntervalSeconds - workTimeElapsed;
+            const min = Math.floor(timeUntilCheckpoint / 60);
+            const sec = timeUntilCheckpoint % 60;
+            display.textContent = `Prochain checkpoint dans : ${min}:${sec.toString().padStart(2, "0")}`;
+          } else {
+            // No checkpoint, show total remaining time
+            const min = Math.floor(remaining / 60);
+            const sec = remaining % 60;
+            display.textContent = `Temps restant : ${min}:${sec.toString().padStart(2, "0")}`;
+          }
+
+          // Always show total remaining time in secondary display
+          const totalMin = Math.floor(remaining / 60);
+          const totalSec = remaining % 60;
+          totalDisplay.textContent = `Temps total restant : ${totalMin}:${totalSec.toString().padStart(2, "0")}`;
 
           // Check if checkpoint should trigger
           if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
@@ -352,6 +375,7 @@ function skipPhase() {
           if (remaining <= 0) {
             clearInterval(interval);
             display.textContent = "Terminé.";
+            totalDisplay.textContent = "";
             bar.style.width = "100%";
             bar.classList.remove("checkpoint");
           }
