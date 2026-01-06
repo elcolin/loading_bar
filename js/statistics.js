@@ -405,11 +405,22 @@ function updateStatsSummary(period, data) {
   
   const maxHours = secondsToHours(maxValue);
   
-  // Calculate average
-  const nonZeroValues = Object.values(data).filter(v => v > 0);
-  const avgHours = nonZeroValues.length > 0 
-    ? secondsToHours(totalSeconds / nonZeroValues.length) 
+  // Calculate average - use all periods for denominator
+  const avgHours = Object.keys(data).length > 0 
+    ? secondsToHours(totalSeconds / Object.keys(data).length) 
     : 0;
+  
+  // Determine the unit for average label
+  let avgUnit = 'Day';
+  if (period === 'Today') {
+    avgUnit = 'Hour';
+  } else if (period === 'This Week') {
+    avgUnit = 'Day';
+  } else if (period === 'This Month') {
+    avgUnit = 'Day';
+  } else if (period === 'This Year') {
+    avgUnit = 'Month';
+  }
   
   summaryDiv.innerHTML = `
     <div class="stats-summary-item">
@@ -421,7 +432,7 @@ function updateStatsSummary(period, data) {
       <span class="stats-summary-value">${maxKey || 'N/A'} (${maxHours.toFixed(2)} hours)</span>
     </div>
     <div class="stats-summary-item">
-      <span class="stats-summary-label">Average per ${period === 'Today' ? 'Hour' : 'Day'}:</span>
+      <span class="stats-summary-label">Average per ${avgUnit}:</span>
       <span class="stats-summary-value">${avgHours.toFixed(2)} hours</span>
     </div>
   `;
