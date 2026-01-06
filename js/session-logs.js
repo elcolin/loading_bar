@@ -700,7 +700,9 @@ function parseCSVAndImport(csvText) {
   // Skip header row
   const dataLines = lines.slice(1);
   
-  // Create a Set of existing timestamps (as numbers) for efficient duplicate checking
+  // Create a Set of existing timestamps for efficient duplicate checking
+  // Using second-precision (not millisecond) to handle minor timing variations
+  // during export/import cycles while still catching true duplicates
   const existingTimestamps = new Set(
     sessionLogs.map(log => Math.floor(new Date(log.timestamp).getTime() / 1000))
   );
@@ -805,26 +807,28 @@ function parseCSVLine(line) {
     throw new Error('Invalid date/time format');
   }
   
-  // Parse numeric values
+  // Parse numeric values with proper validation
   const duration = parseInt(durationStr, 10);
-  const checkpointsCount = parseInt(checkpointsStr, 10) || 0;
-  const checkpointDuration = parseInt(breakDurationStr, 10) || 0;
-  const checkpointInterval = parseInt(intervalStr, 10) || 0;
-  const pausesCount = parseInt(pausesStr, 10) || 0;
-  const completed = completedStr.toLowerCase() === 'yes' || completedStr.toLowerCase() === 'true';
-  
   if (isNaN(duration) || duration <= 0) {
     throw new Error('Invalid duration');
   }
+  
+  // Parse optional numeric values - treat invalid values as 0 for backward compatibility
+  const checkpointsCount = parseInt(checkpointsStr, 10);
+  const checkpointDuration = parseInt(breakDurationStr, 10);
+  const checkpointInterval = parseInt(intervalStr, 10);
+  const pausesCount = parseInt(pausesStr, 10);
+  
+  const completed = completedStr.toLowerCase() === 'yes' || completedStr.toLowerCase() === 'true';
   
   return {
     id: generateSessionId(),
     timestamp: dateObj.toISOString(),
     duration,
-    checkpointsCount,
-    checkpointDuration,
-    checkpointInterval,
-    pausesCount,
+    checkpointsCount: isNaN(checkpointsCount) ? 0 : checkpointsCount,
+    checkpointDuration: isNaN(checkpointDuration) ? 0 : checkpointDuration,
+    checkpointInterval: isNaN(checkpointInterval) ? 0 : checkpointInterval,
+    pausesCount: isNaN(pausesCount) ? 0 : pausesCount,
     completed
   };
 }
