@@ -11,6 +11,7 @@
   <div class="logs-header">
     <span class="logs-title">📊 Session History</span>
     <div class="logs-actions">
+      <button id="addSessionBtn" title="Add manual session">➕</button>
       <button id="exportLogsBtn" title="Export logs">📥</button>
       <button id="clearLogsBtn" title="Clear all logs">🗑️</button>
     </div>
@@ -30,6 +31,55 @@
       <input type="checkbox" id="logPauses" checked>
       Record manual pauses
     </label>
+  </div>
+  
+  <div id="sessionFormModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">Add Manual Session</span>
+        <span class="modal-close" id="closeModal">&times;</span>
+      </div>
+      <form id="sessionForm" class="session-form">
+        <div class="form-group">
+          <label for="sessionDate">Date:</label>
+          <input type="date" id="sessionDate" required>
+        </div>
+        <div class="form-group">
+          <label for="sessionTime">Time:</label>
+          <input type="time" id="sessionTime" required>
+        </div>
+        <div class="form-group">
+          <label for="sessionDuration">Duration (e.g., 1h30m or 90m):</label>
+          <input type="text" id="sessionDuration" placeholder="Ex: 1h30m or 90m" required>
+        </div>
+        <div class="form-group">
+          <label for="sessionCheckpointDuration">Checkpoint Break Duration (optional):</label>
+          <input type="text" id="sessionCheckpointDuration" placeholder="Ex: 5m">
+        </div>
+        <div class="form-group">
+          <label for="sessionCheckpointInterval">Checkpoint Interval (optional):</label>
+          <input type="text" id="sessionCheckpointInterval" placeholder="Ex: 25m">
+        </div>
+        <div class="form-group">
+          <label for="sessionCheckpointsCount">Number of Checkpoints:</label>
+          <input type="number" id="sessionCheckpointsCount" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label for="sessionPausesCount">Number of Manual Pauses:</label>
+          <input type="number" id="sessionPausesCount" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="sessionCompleted" checked>
+            Session completed
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Save</button>
+          <button type="button" id="cancelForm" class="btn-secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
   </div>
   
   <div id="logsContainer">

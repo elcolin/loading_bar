@@ -47,6 +47,12 @@ export function initializeSessionLogs() {
   // Add event listeners for log actions
   document.getElementById('exportLogsBtn').addEventListener('click', exportLogs);
   document.getElementById('clearLogsBtn').addEventListener('click', clearAllLogs);
+  document.getElementById('addSessionBtn').addEventListener('click', openAddSessionModal);
+
+  // Modal form event listeners
+  document.getElementById('closeModal').addEventListener('click', closeSessionModal);
+  document.getElementById('cancelForm').addEventListener('click', closeSessionModal);
+  document.getElementById('sessionForm').addEventListener('submit', handleSessionFormSubmit);
 
   // Render initial logs
   renderLogs();
@@ -157,6 +163,176 @@ function updateTotalWorkTimeDisplay() {
 }
 
 /**
+ * Parse time string to seconds (e.g., "1h30m" or "90m")
+ * @param {string} value - Time string
+ * @returns {number|null} Total seconds or null if invalid
+ */
+function parseTimeString(value) {
+  const regex = /(\d+)\s*(h|m|s)/gi;
+  let totalSeconds = 0;
+  let match;
+
+  while ((match = regex.exec(value)) !== null) {
+    const amount = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+
+    if (unit === "h") totalSeconds += amount * 3600;
+    if (unit === "m") totalSeconds += amount * 60;
+    if (unit === "s") totalSeconds += amount;
+  }
+
+  return totalSeconds > 0 ? totalSeconds : null;
+}
+
+/**
+ * Format seconds to time string (e.g., "1h30m")
+ * @param {number} seconds - Seconds
+ * @returns {string} Time string
+ */
+function formatTimeString(seconds) {
+  if (!seconds) return '';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  let result = '';
+  if (hours > 0) result += `${hours}h`;
+  if (minutes > 0) result += `${minutes}m`;
+  if (secs > 0) result += `${secs}s`;
+  
+  return result || '0s';
+}
+
+let editingSessionId = null;
+
+/**
+ * Open the add session modal
+ */
+function openAddSessionModal() {
+  editingSessionId = null;
+  document.getElementById('modalTitle').textContent = 'Add Manual Session';
+  
+  // Set default values
+  const now = new Date();
+  document.getElementById('sessionDate').value = now.toISOString().split('T')[0];
+  document.getElementById('sessionTime').value = now.toTimeString().slice(0, 5);
+  document.getElementById('sessionDuration').value = '';
+  document.getElementById('sessionCheckpointDuration').value = '';
+  document.getElementById('sessionCheckpointInterval').value = '';
+  document.getElementById('sessionCheckpointsCount').value = '0';
+  document.getElementById('sessionPausesCount').value = '0';
+  document.getElementById('sessionCompleted').checked = true;
+  
+  document.getElementById('sessionFormModal').style.display = 'flex';
+}
+
+/**
+ * Open the edit session modal
+ * @param {string} sessionId - Session ID to edit
+ */
+function openEditSessionModal(sessionId) {
+  const session = sessionLogs.find(log => log.id === sessionId);
+  if (!session) return;
+  
+  editingSessionId = sessionId;
+  document.getElementById('modalTitle').textContent = 'Edit Session';
+  
+  // Parse timestamp
+  const date = new Date(session.timestamp);
+  document.getElementById('sessionDate').value = date.toISOString().split('T')[0];
+  document.getElementById('sessionTime').value = date.toTimeString().slice(0, 5);
+  document.getElementById('sessionDuration').value = formatTimeString(session.duration);
+  document.getElementById('sessionCheckpointDuration').value = formatTimeString(session.checkpointDuration);
+  document.getElementById('sessionCheckpointInterval').value = formatTimeString(session.checkpointInterval);
+  document.getElementById('sessionCheckpointsCount').value = session.checkpointsCount || 0;
+  document.getElementById('sessionPausesCount').value = session.pausesCount || 0;
+  document.getElementById('sessionCompleted').checked = session.completed;
+  
+  document.getElementById('sessionFormModal').style.display = 'flex';
+}
+
+/**
+ * Close the session modal
+ */
+function closeSessionModal() {
+  document.getElementById('sessionFormModal').style.display = 'none';
+  editingSessionId = null;
+}
+
+/**
+ * Handle session form submission
+ * @param {Event} event - Submit event
+ */
+function handleSessionFormSubmit(event) {
+  event.preventDefault();
+  
+  // Get form values
+  const dateValue = document.getElementById('sessionDate').value;
+  const timeValue = document.getElementById('sessionTime').value;
+  const durationStr = document.getElementById('sessionDuration').value.trim();
+  const checkpointDurationStr = document.getElementById('sessionCheckpointDuration').value.trim();
+  const checkpointIntervalStr = document.getElementById('sessionCheckpointInterval').value.trim();
+  const checkpointsCount = parseInt(document.getElementById('sessionCheckpointsCount').value, 10);
+  const pausesCount = parseInt(document.getElementById('sessionPausesCount').value, 10);
+  const completed = document.getElementById('sessionCompleted').checked;
+  
+  // Validate duration
+  const duration = parseTimeString(durationStr);
+  if (!duration) {
+    alert('Invalid duration format. Use e.g., 1h30m or 90m.');
+    return;
+  }
+  
+  // Parse checkpoint values (optional)
+  const checkpointDuration = checkpointDurationStr ? parseTimeString(checkpointDurationStr) : 0;
+  const checkpointInterval = checkpointIntervalStr ? parseTimeString(checkpointIntervalStr) : 0;
+  
+  // Create timestamp from date and time
+  const timestamp = new Date(`${dateValue}T${timeValue}`).toISOString();
+  
+  if (editingSessionId) {
+    // Edit existing session
+    const sessionIndex = sessionLogs.findIndex(log => log.id === editingSessionId);
+    if (sessionIndex !== -1) {
+      sessionLogs[sessionIndex] = {
+        ...sessionLogs[sessionIndex],
+        timestamp,
+        duration,
+        checkpointDuration,
+        checkpointInterval,
+        checkpointsCount,
+        pausesCount,
+        completed
+      };
+      saveLogs();
+      renderLogs();
+      updateTotalWorkTimeDisplay();
+      console.log('Session updated:', sessionLogs[sessionIndex]);
+    }
+  } else {
+    // Add new session
+    const newSession = {
+      id: generateSessionId(),
+      timestamp,
+      duration,
+      checkpointDuration,
+      checkpointInterval,
+      checkpointsCount,
+      pausesCount,
+      completed
+    };
+    sessionLogs.unshift(newSession);
+    saveLogs();
+    renderLogs();
+    updateTotalWorkTimeDisplay();
+    console.log('New session added:', newSession);
+  }
+  
+  closeSessionModal();
+}
+
+/**
  * Render logs to the UI
  */
 function renderLogs() {
@@ -237,6 +413,13 @@ function renderLogs() {
     statusDetail.className = 'log-detail';
     statusDetail.textContent = log.completed ? '✅ Session completed' : '⚠️ Session interrupted';
     logEntry.appendChild(statusDetail);
+    
+    // Create edit button
+    const editBtn = document.createElement('div');
+    editBtn.className = 'log-edit';
+    editBtn.textContent = '✏️ Edit';
+    editBtn.addEventListener('click', () => openEditSessionModal(log.id));
+    logEntry.appendChild(editBtn);
     
     // Create delete button
     const deleteBtn = document.createElement('div');
