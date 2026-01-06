@@ -1,444 +1,471 @@
-# Minuteur avec Barre de Chargement et Checkpoints
+# Timer with Loading Bar and Checkpoints
 
-Un minuteur web élégant avec barre de progression, système de pauses automatiques (checkpoints) et notifications navigateur.
+An elegant web timer with progress bar, automatic breaks system (checkpoints), and browser notifications.
 
-![Interface du minuteur](https://github.com/user-attachments/assets/b70ff126-de5f-46e5-9ffd-19d78d22792d)
+![Timer Interface](https://github.com/user-attachments/assets/b70ff126-de5f-46e5-9ffd-19d78d22792d)
 
-## Fonctionnalités
+## Features
 
-- ⏱️ **Minuteur personnalisable** : Configurez votre temps de travail avec un format flexible (heures, minutes, secondes)
-- 🔔 **Notifications navigateur** : Recevez des alertes même quand l'onglet n'est pas actif
-- ☕ **Système de checkpoints** : Pauses automatiques à intervalles réguliers
-- 📊 **Barre de progression visuelle** : Suivez votre avancement en temps réel
-- 📝 **Notes personnelles** : Prenez des notes pendant vos sessions de travail avec sauvegarde automatique
-- 📈 **Historique des sessions** : Enregistrez et analysez automatiquement toutes vos sessions de travail
-- 🎨 **Interface élégante** : Design sombre et moderne
+- ⏱️ **Customizable timer**: Configure your work time with a flexible format (hours, minutes, seconds)
+- 🔔 **Browser notifications**: Receive alerts even when the tab is not active
+- ☕ **Checkpoint system**: Automatic breaks at regular intervals
+- 📊 **Visual progress bar**: Track your progress in real-time
+- 📝 **Personal notes**: Take notes during your work sessions with automatic saving
+- 📈 **Session history**: Automatically record and analyze all your work sessions
+- 🎨 **Elegant interface**: Modern dark design
+- 🔧 **Modular architecture**: Separated frontend and backend logic for easy maintenance
 
-## Installation et Utilisation
+## Installation and Usage
 
-### Option 1 : Serveur HTTP local (Recommandé)
+### Option 1: Local HTTP Server (Recommended)
 
-Pour tester l'application localement avec les notifications fonctionnelles :
+To test the application locally with functional notifications:
 
-#### Avec Python 3
+#### With Python 3
 
 ```bash
-# Cloner le dépôt
+# Clone the repository
 git clone https://github.com/elcolin/loading_bar.git
 cd loading_bar
 
-# Démarrer le serveur HTTP
+# Start the HTTP server
 python3 -m http.server 8000
 
-# Ouvrir dans votre navigateur
-# Chrome/Edge : http://localhost:8000/timer.html
-# Firefox : http://localhost:8000/timer.html
+# Open in your browser
+# Chrome/Edge: http://localhost:8000/
+# Firefox: http://localhost:8000/
 ```
 
-#### Avec Node.js (http-server)
+#### With Node.js (http-server)
 
 ```bash
-# Installer http-server (si pas déjà installé)
+# Install http-server (if not already installed)
 npm install -g http-server
 
-# Cloner et démarrer
+# Clone and start
 git clone https://github.com/elcolin/loading_bar.git
 cd loading_bar
 http-server -p 8000
 
-# Ouvrir http://localhost:8000/timer.html
+# Open http://localhost:8000/
 ```
 
-#### Avec PHP
+#### With PHP
 
 ```bash
-# Cloner le dépôt
+# Clone the repository
 git clone https://github.com/elcolin/loading_bar.git
 cd loading_bar
 
-# Démarrer le serveur PHP
+# Start the PHP server
 php -S localhost:8000
 
-# Ouvrir http://localhost:8000/timer.html
+# Open http://localhost:8000/
 ```
 
-### Option 2 : Fichier local direct
+### Option 2: Direct Local File
 
 ```bash
-# Cloner le dépôt
+# Clone the repository
 git clone https://github.com/elcolin/loading_bar.git
 cd loading_bar
 
-# Ouvrir directement dans le navigateur
+# Open directly in the browser
 # Linux/Mac
-open timer.html
-# ou
-xdg-open timer.html
+open index.html
+# or
+xdg-open index.html
 
 # Windows
-start timer.html
+start index.html
 ```
 
-**⚠️ Note** : Les notifications peuvent ne pas fonctionner en mode fichier local (`file://`). Utilisez un serveur HTTP local pour une expérience complète.
+**⚠️ Note**: Notifications may not work in local file mode (`file://`). Use a local HTTP server for the complete experience.
 
-## Guide d'Utilisation
+## User Guide
 
-### Configuration de Base
+### Basic Configuration
 
-1. **Définir le temps de travail**
-   - Entrez le temps dans le premier champ
-   - Format accepté : `1h30m0s`, `45m`, `30s`, `1h`, etc.
-   - Exemples :
-     - `25m` = 25 minutes (technique Pomodoro)
-     - `1h30m` = 1 heure 30 minutes
-     - `90s` = 90 secondes
+1. **Set work time**
+   - Enter the time in the first field
+   - Accepted format: `1h30m0s`, `45m`, `30s`, `1h`, etc.
+   - Examples:
+     - `25m` = 25 minutes (Pomodoro technique)
+     - `1h30m` = 1 hour 30 minutes
+     - `90s` = 90 seconds
 
-2. **Cliquer sur "Démarrer"**
-   - Le minuteur démarre immédiatement
-   - La barre verte indique la progression
-   - Le temps restant s'affiche en dessous
+2. **Click "Start"**
+   - The timer starts immediately
+   - The green bar indicates progress
+   - Remaining time is displayed below
 
-### Configuration des Checkpoints (Pauses)
+### Checkpoint Configuration (Breaks)
 
-Les checkpoints sont des pauses automatiques qui s'activent pendant votre session de travail.
+Checkpoints are automatic breaks that activate during your work session.
 
-1. **Configurer la durée de la pause**
-   - Champ "Durée pause" : combien de temps dure la pause
-   - Exemple : `5m` = 5 minutes de pause
+1. **Configure break duration**
+   - "Break duration" field: how long the break lasts
+   - Example: `5m` = 5 minutes break
 
-2. **Configurer l'intervalle**
-   - Champ "Intervalle" : tous les combien de temps de travail
-   - Exemple : `25m` = toutes les 25 minutes de travail
+2. **Configure interval**
+   - "Interval" field: how often during work time
+   - Example: `25m` = every 25 minutes of work
 
-3. **Exemple concret (Technique Pomodoro modifiée)**
+3. **Concrete example (Modified Pomodoro Technique)**
    ```
-   Temps total : 2h
-   Durée pause : 5m
-   Intervalle : 25m
+   Total time: 2h
+   Break duration: 5m
+   Interval: 25m
    
-   Résultat : 
-   - Travail pendant 25 minutes
-   - Pause de 5 minutes (notification)
-   - Travail pendant 25 minutes
-   - Pause de 5 minutes (notification)
+   Result: 
+   - Work for 25 minutes
+   - 5-minute break (notification)
+   - Work for 25 minutes
+   - 5-minute break (notification)
    - etc.
    ```
 
-### Activation des Notifications (Important !)
+### Enabling Notifications (Important!)
 
-**Les notifications sont essentielles pour les checkpoints.**
+**Notifications are essential for checkpoints.**
 
-1. **Cliquer sur "Activer les notifications"** (bouton bleu)
-2. **Accepter** la demande de permission de Chrome/Firefox
-3. Le bouton devient vert : "✓ Notifications activées"
-4. Une notification de test apparaît
+1. **Click "Enable notifications"** (blue button)
+2. **Accept** the Chrome/Firefox permission request
+3. The button turns green: "✓ Notifications enabled"
+4. A test notification appears
 
-![Activer les notifications](https://github.com/user-attachments/assets/257232e6-80d9-418f-bfd5-e3a4e3f34ecd)
+![Enable notifications](https://github.com/user-attachments/assets/257232e6-80d9-418f-bfd5-e3a4e3f34ecd)
 
-**Si vous ne voyez pas de notifications** :
-- ⚠️ Vérifiez que vous avez cliqué sur "Activer les notifications"
-- ⚠️ Vérifiez les paramètres de notification de votre navigateur
-- ⚠️ Assurez-vous d'utiliser un serveur HTTP (pas `file://`)
+**If you don't see notifications**:
+- ⚠️ Check that you clicked "Enable notifications"
+- ⚠️ Check your browser's notification settings
+- ⚠️ Make sure you're using an HTTP server (not `file://`)
 
-### Comportement des Notifications
+### Notification Behavior
 
-Vous recevrez **deux notifications par checkpoint** :
+You will receive **two notifications per checkpoint**:
 
-1. **"Pause checkpoint !"** 
-   - Quand la pause commence
-   - Message : "Prenez une pause de X minute(s)"
-   - La barre devient orange
+1. **"Checkpoint break!"** 
+   - When the break starts
+   - Message: "Take a break for X minute(s)"
+   - The bar turns orange
 
-2. **"Pause terminée !"**
-   - Quand la pause se termine
-   - Message : "Reprise du travail. Bon courage !"
-   - La barre redevient verte
+2. **"Break over!"**
+   - When the break ends
+   - Message: "Back to work. Good luck!"
+   - The bar returns to green
 
-![Checkpoint actif](https://github.com/user-attachments/assets/ad9f028c-3563-4bba-bf2f-aea5b3b1d274)
+![Active checkpoint](https://github.com/user-attachments/assets/ad9f028c-3563-4bba-bf2f-aea5b3b1d274)
 
-### Caractéristiques des Notifications
+### Notification Features
 
-- ✅ **Persistantes** : Restent affichées jusqu'à interaction
-- ✅ **Fonctionnent en arrière-plan** : Même si l'onglet n'est pas actif
-- ✅ **Système d'exploitation** : Notifications natives Windows/Mac/Linux
-- ✅ **Son inclus** : Alerte sonore (si non désactivée dans les paramètres)
-- ✅ **Vibration mobile** : Sur les appareils compatibles
+- ✅ **Persistent**: Remain displayed until interaction
+- ✅ **Work in background**: Even if the tab is not active
+- ✅ **Operating system**: Native Windows/Mac/Linux notifications
+- ✅ **Sound included**: Alert sound (if not disabled in settings)
+- ✅ **Mobile vibration**: On compatible devices
 
-## Exemples d'Utilisation
+## Usage Examples
 
-### Exemple 1 : Pomodoro Classique
+### Example 1: Classic Pomodoro
 ```
-Temps total : 25m
-Durée pause : (vide)
-Intervalle : (vide)
+Total time: 25m
+Break duration: (empty)
+Interval: (empty)
 ```
-Timer simple de 25 minutes sans checkpoints.
+Simple 25-minute timer without checkpoints.
 
-### Exemple 2 : Pomodoro avec Pauses
+### Example 2: Pomodoro with Breaks
 ```
-Temps total : 2h
-Durée pause : 5m
-Intervalle : 25m
+Total time: 2h
+Break duration: 5m
+Interval: 25m
 ```
-Session de 2 heures avec pauses de 5 minutes toutes les 25 minutes.
+2-hour session with 5-minute breaks every 25 minutes.
 
-### Exemple 3 : Session Longue avec Micro-pauses
+### Example 3: Long Session with Micro-breaks
 ```
-Temps total : 3h
-Durée pause : 2m
-Intervalle : 50m
+Total time: 3h
+Break duration: 2m
+Interval: 50m
 ```
-Session de 3 heures avec pauses courtes de 2 minutes toutes les 50 minutes.
+3-hour session with short 2-minute breaks every 50 minutes.
 
-### Exemple 4 : Test Rapide
+### Example 4: Quick Test
 ```
-Temps total : 30s
-Durée pause : 3s
-Intervalle : 10s
+Total time: 30s
+Break duration: 3s
+Interval: 10s
 ```
-Pour tester rapidement les fonctionnalités (10s de travail, 3s de pause).
+To quickly test features (10s work, 3s break).
 
-## Notes Personnelles
+## Personal Notes
 
-### Utilisation des Notes
+### Using Notes
 
-L'application intègre un système de prise de notes pour vous permettre de garder une trace de vos pensées, tâches et informations importantes pendant vos sessions de travail.
+The application includes a note-taking system to allow you to keep track of your thoughts, tasks, and important information during your work sessions.
 
-1. **Ouvrir les notes**
-   - Cliquez sur "📝 Notes personnelles" en bas de l'interface
-   - La section se déploie pour afficher le champ de saisie
+1. **Open notes**
+   - Click "📝 Personal notes" at the bottom of the interface
+   - The section expands to display the input field
 
-2. **Écrire des notes**
-   - Tapez directement dans la zone de texte
-   - Vos notes sont automatiquement sauvegardées après 500ms d'inactivité
-   - Les notes sont stockées localement dans votre navigateur (localStorage)
+2. **Write notes**
+   - Type directly in the text area
+   - Your notes are automatically saved after 500ms of inactivity
+   - Notes are stored locally in your browser (localStorage)
 
-3. **Exporter les notes**
-   - Cliquez sur "📥 Exporter les notes"
-   - Un fichier `notes_YYYY-MM-DD.notes.txt` sera téléchargé
-   - Sauvegardez ce fichier dans le dossier `notes/` du projet (il sera ignoré par Git)
+3. **Export notes**
+   - Click "📥 Export notes"
+   - A `notes_YYYY-MM-DD.notes.txt` file will be downloaded
+   - Save this file in the project's `notes/` folder (it will be ignored by Git)
 
-4. **Effacer les notes**
-   - Cliquez sur "🗑️ Effacer les notes"
-   - Confirmez l'action (irréversible)
+4. **Clear notes**
+   - Click "🗑️ Clear notes"
+   - Confirm the action (irreversible)
 
-### Protection de la Vie Privée
+### Privacy Protection
 
-- Les notes ne sont **jamais envoyées sur Internet** - elles restent sur votre ordinateur
-- Le fichier `.gitignore` exclut automatiquement :
-  - Le dossier `notes/` (pour vos fichiers exportés)
-  - Les fichiers `*.notes.txt` 
-  - Les fichiers `*.private.txt`
-- Vos notes personnelles ne seront jamais commitées dans le dépôt Git
+- Notes are **never sent to the Internet** - they stay on your computer
+- The `.gitignore` file automatically excludes:
+  - The `notes/` folder (for your exported files)
+  - `*.notes.txt` files
+  - `*.private.txt` files
+- Your personal notes will never be committed to the Git repository
 
-![Notes personnelles](https://github.com/user-attachments/assets/795c8ecb-b848-4b1f-af7c-0aa89487f4ab)
+![Personal notes](https://github.com/user-attachments/assets/795c8ecb-b848-4b1f-af7c-0aa89487f4ab)
 
-## Historique des Sessions
+## Session History
 
-### Vue d'ensemble
+### Overview
 
-L'application enregistre automatiquement toutes vos sessions de travail dans un panneau dédié sur le côté gauche de l'interface. Cette fonctionnalité vous permet de suivre votre productivité et d'analyser vos habitudes de travail au fil du temps.
+The application automatically records all your work sessions in a dedicated panel on the left side of the interface. This feature allows you to track your productivity and analyze your work habits over time.
 
-![Historique des sessions](https://github.com/user-attachments/assets/91756515-98f7-462f-a189-14ec3a252854)
+![Session history](https://github.com/user-attachments/assets/91756515-98f7-462f-a189-14ec3a252854)
 
-### Informations enregistrées
+### Recorded Information
 
-Chaque session enregistre automatiquement :
-- 📅 **Date et heure** : Horodatage précis de début de session
-- ⏱️ **Durée** : Temps total de la session
-- ☕ **Checkpoints** : Nombre de pauses automatiques prises
-- ⏸️ **Durée de pause** : Configuration des pauses checkpoint
-- 🔄 **Intervalle** : Fréquence des pauses
-- ⏸️ **Pauses manuelles** : Nombre de pauses manuelles effectuées
-- ✅ **Statut** : Session complétée ou interrompue
+Each session automatically records:
+- 📅 **Date and time**: Precise session start timestamp
+- ⏱️ **Duration**: Total session time
+- ☕ **Checkpoints**: Number of automatic breaks taken
+- ⏸️ **Break duration**: Checkpoint break configuration
+- 🔄 **Interval**: Break frequency
+- ⏸️ **Manual pauses**: Number of manual pauses made
+- ✅ **Status**: Session completed or interrupted
 
-![Sessions multiples](https://github.com/user-attachments/assets/55be647f-8e6d-4533-9d87-67bf37f19119)
+![Multiple sessions](https://github.com/user-attachments/assets/55be647f-8e6d-4533-9d87-67bf37f19119)
 
-### Configuration des paramètres
+### Configuration Settings
 
-Le panneau de logs offre trois options configurables :
+The logs panel offers three configurable options:
 
-1. **Enregistrer automatiquement les sessions**
-   - Active/désactive l'enregistrement automatique
-   - Les sessions ne seront pas enregistrées si cette option est désactivée
+1. **Automatically record sessions**
+   - Enable/disable automatic recording
+   - Sessions will not be recorded if this option is disabled
 
-2. **Inclure les détails des checkpoints**
-   - Affiche/masque les informations détaillées sur les pauses
-   - Utile pour une vue simplifiée
+2. **Include checkpoint details**
+   - Show/hide detailed break information
+   - Useful for a simplified view
 
-3. **Enregistrer les pauses manuelles**
-   - Compte/ignore les pauses manuelles dans les statistiques
-   - Permet de différencier les pauses automatiques des manuelles
+3. **Record manual pauses**
+   - Count/ignore manual pauses in statistics
+   - Allows differentiating automatic from manual pauses
 
-Toutes les configurations sont sauvegardées automatiquement dans localStorage.
+All configurations are automatically saved in localStorage.
 
-### Gestion des logs
+### Log Management
 
-#### Supprimer un log
+#### Delete a log
 
-Cliquez sur "🗑️ Supprimer" sous une entrée pour la supprimer définitivement.
+Click "🗑️ Delete" under an entry to permanently delete it.
 
-#### Effacer tous les logs
+#### Clear all logs
 
-Cliquez sur le bouton "🗑️" en haut à droite du panneau pour effacer tout l'historique.
+Click the "🗑️" button at the top right of the panel to clear all history.
 
-#### Exporter les données
+#### Export data
 
-Cliquez sur le bouton "📥" pour exporter toutes vos sessions au format CSV. Le fichier exporté contient :
-- Date et heure de chaque session
-- Durée en secondes (facilite les calculs)
-- Nombre de checkpoints
-- Configuration des pauses
-- Nombre de pauses manuelles
-- Statut de complétion
+Click the "📥" button to export all your sessions in CSV format. The exported file contains:
+- Date and time of each session
+- Duration in seconds (facilitates calculations)
+- Number of checkpoints
+- Break configuration
+- Number of manual pauses
+- Completion status
 
-**Format du fichier** : `session_logs_YYYY-MM-DD.csv`
+**File format**: `session_logs_YYYY-MM-DD.csv`
 
-### Utilisation pour l'analyse de données
+### Using for Data Analysis
 
-Le format CSV permet une analyse facile avec des outils comme :
-- **Excel / Google Sheets** : Tableaux croisés dynamiques, graphiques
-- **Python / Pandas** : Analyse statistique avancée
-- **R** : Visualisations et modèles statistiques
-- **Power BI / Tableau** : Dashboards interactifs
+The CSV format allows easy analysis with tools like:
+- **Excel / Google Sheets**: Pivot tables, charts
+- **Python / Pandas**: Advanced statistical analysis
+- **R**: Visualizations and statistical models
+- **Power BI / Tableau**: Interactive dashboards
 
-#### Exemple d'analyse
+#### Analysis Example
 
 ```csv
-Date,Heure,Durée (s),Checkpoints,Durée pause (s),Intervalle (s),Pauses manuelles,Complétée
-06/01/2026,11:38:55,6,1,2,4,0,Oui
-06/01/2026,11:37:42,10,2,0,0,0,Oui
+Date,Time,Duration (s),Checkpoints,Break duration (s),Interval (s),Manual pauses,Completed
+01/06/2026,11:38:55,6,1,2,4,0,Yes
+01/06/2026,11:37:42,10,2,0,0,0,Yes
 ```
 
-Avec ces données, vous pouvez :
-- Calculer le temps de travail total par jour/semaine/mois
-- Analyser l'efficacité des pauses checkpoint
-- Identifier les moments de la journée les plus productifs
-- Mesurer votre constance dans les sessions de travail
+With this data, you can:
+- Calculate total work time per day/week/month
+- Analyze checkpoint break effectiveness
+- Identify the most productive times of day
+- Measure your consistency in work sessions
 
-### Protection de la vie privée
+### Privacy Protection
 
-- Les logs sont **stockés localement** dans votre navigateur (localStorage)
-- **Aucune donnée n'est envoyée sur Internet**
-- Les fichiers exportés restent sur votre ordinateur
-- Vous contrôlez totalement vos données
+- Logs are **stored locally** in your browser (localStorage)
+- **No data is sent to the Internet**
+- Exported files remain on your computer
+- You have complete control over your data
 
-## Compatibilité Navigateur
+## Browser Compatibility
 
-| Navigateur | Version | Notifications | Checkpoints |
-|------------|---------|---------------|-------------|
-| Chrome     | ≥ 22    | ✅            | ✅          |
-| Firefox    | ≥ 22    | ✅            | ✅          |
-| Edge       | ≥ 14    | ✅            | ✅          |
-| Safari     | ≥ 7     | ✅            | ✅          |
-| Opera      | ≥ 25    | ✅            | ✅          |
+| Browser | Version | Notifications | Checkpoints |
+|---------|---------|---------------|-------------|
+| Chrome  | ≥ 22    | ✅            | ✅          |
+| Firefox | ≥ 22    | ✅            | ✅          |
+| Edge    | ≥ 14    | ✅            | ✅          |
+| Safari  | ≥ 7     | ✅            | ✅          |
+| Opera   | ≥ 25    | ✅            | ✅          |
 
-## Résolution de Problèmes
+## Troubleshooting
 
-### Les notifications n'apparaissent pas
+### Notifications don't appear
 
-**Vérifications :**
+**Checks:**
 
-1. **Permission accordée ?**
+1. **Permission granted?**
    ```
-   - Cliquez sur "Activer les notifications"
-   - Vérifiez que le bouton est vert
-   - Rechargez la page si nécessaire
-   ```
-
-2. **Paramètres du navigateur (Chrome)**
-   ```
-   1. Ouvrir chrome://settings/content/notifications
-   2. Vérifier que les notifications sont autorisées
-   3. Vérifier que localhost:8000 est dans la liste des autorisations
+   - Click "Enable notifications"
+   - Check that the button is green
+   - Reload the page if necessary
    ```
 
-3. **Paramètres du navigateur (Firefox)**
+2. **Browser settings (Chrome)**
    ```
-   1. Ouvrir about:preferences#privacy
-   2. Section "Permissions" > "Notifications" > "Paramètres"
-   3. Vérifier localhost:8000
+   1. Open chrome://settings/content/notifications
+   2. Check that notifications are allowed
+   3. Check that localhost:8000 is in the allowed list
    ```
 
-4. **Mode fichier local**
+3. **Browser settings (Firefox)**
+   ```
+   1. Open about:preferences#privacy
+   2. "Permissions" section > "Notifications" > "Settings"
+   3. Check localhost:8000
+   ```
+
+4. **Local file mode**
    ```bash
-   # Les notifications ne fonctionnent pas avec file://
-   # Utilisez un serveur HTTP :
+   # Notifications don't work with file://
+   # Use an HTTP server:
    python3 -m http.server 8000
    ```
 
-5. **Console développeur**
+5. **Developer console**
    ```
-   Appuyez sur F12 pour ouvrir la console
-   Vérifiez les messages d'erreur
-   Recherchez "Permission accordée: false"
+   Press F12 to open the console
+   Check for error messages
+   Look for "Permission granted: false"
    ```
 
-### Le checkpoint ne se déclenche pas
+### Checkpoint doesn't trigger
 
-- ✅ Vérifiez que les deux champs (durée et intervalle) sont remplis
-- ✅ Utilisez le format correct : `5m`, `30s`, `1h`, etc.
-- ✅ Le checkpoint se base sur le temps de **travail** (pas le temps total)
+- ✅ Check that both fields (duration and interval) are filled
+- ✅ Use the correct format: `5m`, `30s`, `1h`, etc.
+- ✅ The checkpoint is based on **work** time (not total time)
 
-### La barre ne progresse pas
+### Progress bar doesn't move
 
-- Rechargez la page (F5)
-- Vérifiez le format du temps
-- Ouvrez la console (F12) pour voir les erreurs
+- Reload the page (F5)
+- Check the time format
+- Open the console (F12) to see errors
 
-## Développement
+## Development
 
-### Structure du Projet
+### Project Structure
 
 ```
 loading_bar/
-├── timer.html          # Application complète (HTML + CSS + JS)
-└── README.md          # Ce fichier
+├── index.html          # Main HTML file
+├── timer.html          # Legacy monolithic version (deprecated)
+├── css/
+│   └── styles.css      # All application styles
+├── js/
+│   ├── app.js          # Application initialization
+│   ├── timer.js        # Core timer logic
+│   ├── notifications.js # Notification handling
+│   ├── notes.js        # Personal notes functionality
+│   ├── session-logs.js # Session logging
+│   └── storage.js      # LocalStorage utilities
+└── README.md          # This file
 ```
 
-### Technologies Utilisées
+### Technologies Used
 
 - HTML5
 - CSS3 (Flexbox, Gradients, Transitions)
-- JavaScript Vanilla (ES6+)
+- JavaScript ES6+ Modules
 - Notification API
 - Vibration API (mobile)
 
-### Contribution
+### Architecture
 
-Les contributions sont les bienvenues ! 
+The application follows a modular architecture with separated concerns:
+
+**Frontend (HTML/CSS)**:
+- `index.html`: Structure and layout
+- `css/styles.css`: All visual styling
+
+**Backend Logic (JavaScript Modules)**:
+- `storage.js`: Data persistence layer (localStorage)
+- `notifications.js`: Browser notification management
+- `timer.js`: Core timer and checkpoint logic
+- `notes.js`: Note-taking functionality
+- `session-logs.js`: Session tracking and analytics
+- `app.js`: Application initialization and event binding
+
+### Contributing
+
+Contributions are welcome!
 
 ```bash
-# Fork le projet
-git clone https://github.com/votre-username/loading_bar.git
+# Fork the project
+git clone https://github.com/your-username/loading_bar.git
 cd loading_bar
 
-# Créer une branche
-git checkout -b feature/ma-fonctionnalite
+# Create a branch
+git checkout -b feature/my-feature
 
-# Faire vos modifications
-# Tester localement
+# Make your modifications
+# Test locally
 python3 -m http.server 8000
 
-# Commit et push
+# Commit and push
 git add .
-git commit -m "Ajout de ma fonctionnalité"
-git push origin feature/ma-fonctionnalite
+git commit -m "Add my feature"
+git push origin feature/my-feature
 
-# Créer une Pull Request sur GitHub
+# Create a Pull Request on GitHub
 ```
 
-## Licence
+## License
 
-Ce projet est libre d'utilisation.
+This project is free to use.
 
 ## Support
 
-Pour toute question ou problème :
-- Ouvrir une issue sur GitHub
-- Vérifier la section "Résolution de Problèmes" ci-dessus
-- Consulter la console développeur (F12) pour les messages de debug
+For any questions or issues:
+- Open an issue on GitHub
+- Check the "Troubleshooting" section above
+- Check the developer console (F12) for debug messages
 
 ---
 
-**Bon travail et bonnes pauses ! ☕⏱️**
+**Happy working and happy breaks! ☕⏱️**

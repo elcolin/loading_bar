@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Timer with Loading Bar</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="logs-panel">
+  <div class="logs-header">
+    <span class="logs-title">📊 Session History</span>
+    <div class="logs-actions">
+      <button id="exportLogsBtn" title="Export logs">📥</button>
+      <button id="clearLogsBtn" title="Clear all logs">🗑️</button>
+    </div>
+  </div>
+  
+  <div class="logs-config">
+    <div class="logs-config-title">⚙️ Settings</div>
+    <label>
+      <input type="checkbox" id="autoLogEnabled" checked>
+      Automatically record sessions
+    </label>
+    <label>
+      <input type="checkbox" id="logCheckpoints" checked>
+      Include checkpoint details
+    </label>
+    <label>
+      <input type="checkbox" id="logPauses" checked>
+      Record manual pauses
+    </label>
+  </div>
+  
+  <div id="logsContainer">
+    <div class="logs-empty">No sessions recorded</div>
+  </div>
+</div>
+
+<div class="main-content">
+<input id="timeInput" placeholder="Ex: 1h28m0s">
+
+<div class="checkpoint-config">
+  <div class="checkpoint-label">Checkpoint breaks configuration</div>
+  <input id="checkpointDuration" placeholder="Break duration: 5m">
+  <input id="checkpointInterval" placeholder="Interval: 25m">
+</div>
+
+<button id="notificationBtn" class="secondary">Enable notifications</button>
+<div class="checkpoint-label" id="notificationStatus" style="color: #ff9800; display: none;">⚠️ Enable notifications to receive alerts</div>
+
+<button id="startBtn">Start</button>
+
+<div style="display: flex; gap: 10px; justify-content: center;">
+  <button id="pauseBtn" style="display: none; background: #ff9800;">Pause</button>
+  <button id="skipBtn" style="display: none; background: #f44336;">Skip</button>
+</div>
+
+  <div class="progress-section">
+    <div class="progress-label" id="checkpointLabel">Next checkpoint</div>
+    <div class="bar-container">
+      <div class="bar" id="bar"></div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label">Total time</div>
+    <div class="bar-container">
+      <div class="bar total" id="totalBar"></div>
+    </div>
+  </div>
+
+  <div class="time" id="timeDisplay"></div>
+  <div class="time secondary" id="totalTimeDisplay" aria-label="Total time remaining"></div>
+
+  <div class="notes-section">
+    <div class="notes-header" id="notesHeader">
+      <span>📝 Personal notes</span>
+      <span class="notes-toggle" id="notesToggle">▼</span>
+    </div>
+    <div class="notes-content" id="notesContent">
+      <textarea 
+        class="notes-textarea" 
+        id="notesTextarea" 
+        placeholder="Write your notes here... They are automatically saved in your browser."></textarea>
+      <div class="notes-actions">
+        <button id="exportNotesBtn">📥 Export notes</button>
+        <button id="clearNotesBtn">🗑️ Clear notes</button>
+      </div>
+      <div class="notes-info">
+        💡 Notes are automatically saved in your browser (localStorage).
+        Export them to a file to save them permanently.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
