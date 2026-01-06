@@ -689,7 +689,8 @@ async function importCSVFile(file) {
  * @returns {Object} Import results with counts
  */
 function parseCSVAndImport(csvText) {
-  const lines = csvText.trim().split('\n');
+  // Split on any line ending type (\r\n, \n, or \r)
+  const lines = csvText.trim().split(/\r?\n|\r/);
   
   // Check if there's at least a header and one data row
   if (lines.length < 2) {
@@ -698,6 +699,11 @@ function parseCSVAndImport(csvText) {
   
   // Skip header row
   const dataLines = lines.slice(1);
+  
+  // Create a Set of existing timestamps (as numbers) for efficient duplicate checking
+  const existingTimestamps = new Set(
+    sessionLogs.map(log => Math.floor(new Date(log.timestamp).getTime() / 1000))
+  );
   
   let imported = 0;
   let skipped = 0;
@@ -708,16 +714,16 @@ function parseCSVAndImport(csvText) {
     try {
       const session = parseCSVLine(line);
       
-      // Check for duplicates (same timestamp)
-      const isDuplicate = sessionLogs.some(log => 
-        Math.abs(new Date(log.timestamp).getTime() - new Date(session.timestamp).getTime()) < 1000
-      );
+      // Check for duplicates using the timestamp Set (within 1 second)
+      const sessionTimestamp = Math.floor(new Date(session.timestamp).getTime() / 1000);
+      const isDuplicate = existingTimestamps.has(sessionTimestamp);
       
       if (isDuplicate) {
         skipped++;
         console.log('Skipping duplicate session:', session.timestamp);
       } else {
         sessionLogs.push(session);
+        existingTimestamps.add(sessionTimestamp); // Add to Set to catch duplicates within this import
         imported++;
       }
     } catch (error) {
@@ -772,8 +778,29 @@ function parseCSVLine(line) {
   
   const [dateStr, timeStr, durationStr, checkpointsStr, breakDurationStr, intervalStr, pausesStr, completedStr] = values;
   
-  // Parse date and time
-  const dateObj = new Date(dateStr + ' ' + timeStr);
+  // Parse date and time - handle MM/DD/YYYY format explicitly
+  // The export function uses toLocaleDateString('en-US') which creates MM/DD/YYYY
+  let dateObj;
+  
+  // Try parsing MM/DD/YYYY HH:MM:SS format first (exported format)
+  const dateMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+  
+  if (dateMatch && timeMatch) {
+    // Parse as MM/DD/YYYY HH:MM:SS
+    const month = parseInt(dateMatch[1], 10) - 1; // JavaScript months are 0-indexed
+    const day = parseInt(dateMatch[2], 10);
+    const year = parseInt(dateMatch[3], 10);
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const seconds = parseInt(timeMatch[3], 10);
+    
+    dateObj = new Date(year, month, day, hours, minutes, seconds);
+  } else {
+    // Fallback to generic parsing
+    dateObj = new Date(dateStr + ' ' + timeStr);
+  }
+  
   if (isNaN(dateObj.getTime())) {
     throw new Error('Invalid date/time format');
   }
