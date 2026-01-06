@@ -471,7 +471,7 @@ function renderLogs() {
         });
         
         checkpointSessionsToggle.addEventListener('click', () => {
-          const isVisible = checkpointSessionsList.style.display !== 'none';
+          const isVisible = checkpointSessionsList.style.display === 'block';
           if (isVisible) {
             checkpointSessionsList.style.display = 'none';
             checkpointSessionsToggle.textContent = `▼ View checkpoint sessions (${log.checkpointSessions.length})`;
