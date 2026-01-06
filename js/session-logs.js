@@ -274,7 +274,7 @@ function clearAllLogs() {
  */
 export function startNewSession(totalSeconds, checkpointDuration, checkpointInterval) {
   currentSession = {
-    id: Date.now() + '_' + Math.random().toString(36).substr(2, 9), // Unique ID
+    id: Date.now() + '_' + Math.random().toString(36).substring(2, 11), // Unique ID
     timestamp: new Date().toISOString(),
     duration: totalSeconds,
     checkpointsCount: 0,

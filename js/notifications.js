@@ -85,8 +85,10 @@ export function sendNotification(title, body) {
  * Send a test notification
  */
 export function sendTestNotification() {
-  sendNotification("Notifications enabled", {
-    body: "You will receive notifications during checkpoint breaks.",
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
-  });
+  if (notificationPermissionGranted && isNotificationSupported()) {
+    new Notification("Notifications enabled", {
+      body: "You will receive notifications during checkpoint breaks.",
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
+    });
+  }
 }

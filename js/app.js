@@ -4,7 +4,7 @@
 
 import { initializeNotes } from './notes.js';
 import { initializeSessionLogs } from './session-logs.js';
-import { requestNotificationPermission, sendTestNotification, isNotificationPermissionGranted } from './notifications.js';
+import { requestNotificationPermission, sendTestNotification } from './notifications.js';
 import { startTimer, togglePause, skipPhase } from './timer.js';
 
 // Initialize on page load
@@ -37,12 +37,7 @@ function setupEventListeners() {
       document.getElementById("notificationStatus").style.display = "none";
       document.getElementById("notificationBtn").textContent = "✓ Notifications enabled";
       document.getElementById("notificationBtn").style.background = "#4caf50";
-      
-      // Send test notification with correct parameters
-      const testNotification = new Notification("Notifications enabled", {
-        body: "You will receive notifications during checkpoint breaks.",
-        icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
-      });
+      sendTestNotification();
     }
   });
 }
