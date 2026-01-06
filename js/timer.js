@@ -126,6 +126,10 @@ export function skipPhase() {
 export function startTimer() {
   clearInterval(interval);
   isPaused = false;
+  
+  // Reset timer tracking variables
+  timerStartTime = 0;
+  elapsedBeforePause = 0;
 
   const input = document.getElementById("timeInput").value.trim();
   totalSeconds = parseTime(input);
@@ -315,8 +319,10 @@ export function stopTimer() {
     document.getElementById("pauseBtn").style.display = "none";
     document.getElementById("skipBtn").style.display = "none";
     
-    // Reset pause state
+    // Reset timer tracking variables
     isPaused = false;
+    timerStartTime = 0;
+    elapsedBeforePause = 0;
     
     console.log(`Timer stopped. Elapsed time: ${actualElapsedSeconds}s`);
   }
