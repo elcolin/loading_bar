@@ -9,11 +9,139 @@
       background: #111;
       color: #eee;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      flex-direction: row;
+      align-items: stretch;
       justify-content: center;
       height: 100vh;
       gap: 20px;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .logs-panel {
+      width: 350px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .logs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #333;
+    }
+
+    .logs-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #4caf50;
+    }
+
+    .logs-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .logs-actions button {
+      font-size: 11px;
+      padding: 5px 10px;
+      background: #555;
+    }
+
+    .logs-actions button:hover {
+      background: #666;
+    }
+
+    .log-entry {
+      background: #222;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      border-left: 3px solid #4caf50;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .log-entry:hover {
+      background: #2a2a2a;
+    }
+
+    .log-entry.with-checkpoint {
+      border-left-color: #ff9800;
+    }
+
+    .log-date {
+      font-weight: bold;
+      color: #4caf50;
+      margin-bottom: 5px;
+    }
+
+    .log-detail {
+      color: #aaa;
+      margin: 2px 0;
+    }
+
+    .log-delete {
+      color: #f44336;
+      font-size: 10px;
+      margin-top: 5px;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .log-delete:hover {
+      text-decoration: underline;
+    }
+
+    .logs-empty {
+      text-align: center;
+      color: #666;
+      padding: 20px;
+      font-style: italic;
+    }
+
+    .logs-config {
+      background: #222;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .logs-config-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #2196f3;
+    }
+
+    .logs-config label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      margin-bottom: 5px;
+      color: #aaa;
+    }
+
+    .logs-config input[type="checkbox"] {
+      width: auto;
     }
 
     input, button {
@@ -178,6 +306,37 @@
 </head>
 <body>
 
+<div class="logs-panel">
+  <div class="logs-header">
+    <span class="logs-title">📊 Historique des sessions</span>
+    <div class="logs-actions">
+      <button id="exportLogsBtn" title="Exporter les logs">📥</button>
+      <button id="clearLogsBtn" title="Effacer tous les logs">🗑️</button>
+    </div>
+  </div>
+  
+  <div class="logs-config">
+    <div class="logs-config-title">⚙️ Paramètres</div>
+    <label>
+      <input type="checkbox" id="autoLogEnabled" checked>
+      Enregistrer automatiquement les sessions
+    </label>
+    <label>
+      <input type="checkbox" id="logCheckpoints" checked>
+      Inclure les détails des checkpoints
+    </label>
+    <label>
+      <input type="checkbox" id="logPauses" checked>
+      Enregistrer les pauses manuelles
+    </label>
+  </div>
+  
+  <div id="logsContainer">
+    <div class="logs-empty">Aucune session enregistrée</div>
+  </div>
+</div>
+
+<div class="main-content">
 <input id="timeInput" placeholder="Ex: 1h28m0s">
 
 <div class="checkpoint-config">
@@ -234,6 +393,8 @@
     </div>
   </div>
 
+</div>
+
   <script>
 let interval = null;
 let started = false;
@@ -257,8 +418,22 @@ const NOTES_STORAGE_KEY = 'timer_app_notes';
 let notesOpen = false;
 let autoSaveTimeout = null;
 
-// Initialize notes on page load
-document.addEventListener('DOMContentLoaded', initializeNotes);
+// Session logs functionality
+const LOGS_STORAGE_KEY = 'timer_app_session_logs';
+const LOGS_CONFIG_KEY = 'timer_app_logs_config';
+let sessionLogs = [];
+let logsConfig = {
+  autoLogEnabled: true,
+  logCheckpoints: true,
+  logPauses: true
+};
+let currentSession = null;
+
+// Initialize notes and logs on page load
+document.addEventListener('DOMContentLoaded', () => {
+  initializeNotes();
+  initializeLogs();
+});
 
 function initializeNotes() {
   const notesTextarea = document.getElementById('notesTextarea');
@@ -335,6 +510,239 @@ function clearNotes() {
     notesTextarea.value = '';
     localStorage.removeItem(NOTES_STORAGE_KEY);
     console.log('Notes cleared');
+  }
+}
+
+// Session logs functionality
+function initializeLogs() {
+  // Load logs from localStorage
+  const savedLogs = localStorage.getItem(LOGS_STORAGE_KEY);
+  if (savedLogs) {
+    try {
+      sessionLogs = JSON.parse(savedLogs);
+    } catch (e) {
+      console.error('Error loading logs:', e);
+      sessionLogs = [];
+    }
+  }
+
+  // Load config from localStorage
+  const savedConfig = localStorage.getItem(LOGS_CONFIG_KEY);
+  if (savedConfig) {
+    try {
+      logsConfig = JSON.parse(savedConfig);
+    } catch (e) {
+      console.error('Error loading logs config:', e);
+    }
+  }
+
+  // Set checkbox states
+  document.getElementById('autoLogEnabled').checked = logsConfig.autoLogEnabled;
+  document.getElementById('logCheckpoints').checked = logsConfig.logCheckpoints;
+  document.getElementById('logPauses').checked = logsConfig.logPauses;
+
+  // Add event listeners for config changes
+  document.getElementById('autoLogEnabled').addEventListener('change', (e) => {
+    logsConfig.autoLogEnabled = e.target.checked;
+    saveLogsConfig();
+  });
+  document.getElementById('logCheckpoints').addEventListener('change', (e) => {
+    logsConfig.logCheckpoints = e.target.checked;
+    saveLogsConfig();
+  });
+  document.getElementById('logPauses').addEventListener('change', (e) => {
+    logsConfig.logPauses = e.target.checked;
+    saveLogsConfig();
+  });
+
+  // Add event listeners for log actions
+  document.getElementById('exportLogsBtn').addEventListener('click', exportLogs);
+  document.getElementById('clearLogsBtn').addEventListener('click', clearAllLogs);
+
+  // Render initial logs
+  renderLogs();
+}
+
+function saveLogsConfig() {
+  localStorage.setItem(LOGS_CONFIG_KEY, JSON.stringify(logsConfig));
+  console.log('Logs config saved:', logsConfig);
+}
+
+function saveLogs() {
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(sessionLogs));
+  console.log('Logs saved:', sessionLogs.length, 'entries');
+}
+
+function addSessionLog(session) {
+  if (!logsConfig.autoLogEnabled) {
+    console.log('Auto-logging disabled, session not recorded');
+    return;
+  }
+
+  sessionLogs.unshift(session); // Add to beginning
+  saveLogs();
+  renderLogs();
+  console.log('Session logged:', session);
+}
+
+function deleteLog(index) {
+  if (confirm('Supprimer cette session des logs ?')) {
+    sessionLogs.splice(index, 1);
+    saveLogs();
+    renderLogs();
+  }
+}
+
+function renderLogs() {
+  const container = document.getElementById('logsContainer');
+  
+  if (sessionLogs.length === 0) {
+    container.innerHTML = '<div class="logs-empty">Aucune session enregistrée</div>';
+    return;
+  }
+
+  container.innerHTML = sessionLogs.map((log, index) => {
+    const date = new Date(log.timestamp);
+    const dateStr = date.toLocaleDateString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+    const timeStr = date.toLocaleTimeString('fr-FR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    const durationMin = Math.floor(log.duration / 60);
+    const durationSec = log.duration % 60;
+    const durationStr = durationMin > 0 
+      ? `${durationMin}m ${durationSec}s` 
+      : `${durationSec}s`;
+
+    const hasCheckpoints = log.checkpointsCount > 0;
+    const checkpointClass = hasCheckpoints ? 'with-checkpoint' : '';
+
+    let details = `<div class="log-detail">⏱️ Durée: ${durationStr}</div>`;
+    
+    if (hasCheckpoints && logsConfig.logCheckpoints) {
+      details += `<div class="log-detail">☕ Checkpoints: ${log.checkpointsCount}</div>`;
+      if (log.checkpointDuration) {
+        const cpMin = Math.floor(log.checkpointDuration / 60);
+        const cpSec = log.checkpointDuration % 60;
+        const cpDur = cpMin > 0 ? `${cpMin}m ${cpSec}s` : `${cpSec}s`;
+        details += `<div class="log-detail">⏸️ Durée pause: ${cpDur}</div>`;
+      }
+      if (log.checkpointInterval) {
+        const ciMin = Math.floor(log.checkpointInterval / 60);
+        const ciSec = log.checkpointInterval % 60;
+        const ciDur = ciMin > 0 ? `${ciMin}m ${ciSec}s` : `${ciSec}s`;
+        details += `<div class="log-detail">🔄 Intervalle: ${ciDur}</div>`;
+      }
+    }
+
+    if (log.pausesCount > 0 && logsConfig.logPauses) {
+      details += `<div class="log-detail">⏸️ Pauses manuelles: ${log.pausesCount}</div>`;
+    }
+
+    if (log.completed) {
+      details += `<div class="log-detail">✅ Session complétée</div>`;
+    } else {
+      details += `<div class="log-detail">⚠️ Session interrompue</div>`;
+    }
+
+    return `
+      <div class="log-entry ${checkpointClass}">
+        <div class="log-date">${dateStr} - ${timeStr}</div>
+        ${details}
+        <div class="log-delete" onclick="deleteLog(${index})">🗑️ Supprimer</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function exportLogs() {
+  if (sessionLogs.length === 0) {
+    alert('Aucun log à exporter.');
+    return;
+  }
+
+  // Export as CSV for data analysis
+  const csvHeader = 'Date,Heure,Durée (s),Checkpoints,Durée pause (s),Intervalle (s),Pauses manuelles,Complétée\n';
+  const csvRows = sessionLogs.map(log => {
+    const date = new Date(log.timestamp);
+    const dateStr = date.toLocaleDateString('fr-FR');
+    const timeStr = date.toLocaleTimeString('fr-FR');
+    return [
+      dateStr,
+      timeStr,
+      log.duration,
+      log.checkpointsCount || 0,
+      log.checkpointDuration || 0,
+      log.checkpointInterval || 0,
+      log.pausesCount || 0,
+      log.completed ? 'Oui' : 'Non'
+    ].join(',');
+  }).join('\n');
+
+  const csv = csvHeader + csvRows;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().split('T')[0];
+  a.download = `session_logs_${dateStr}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  console.log('Logs exported successfully');
+}
+
+function clearAllLogs() {
+  if (confirm('Êtes-vous sûr de vouloir effacer tous les logs ? Cette action est irréversible.')) {
+    sessionLogs = [];
+    saveLogs();
+    renderLogs();
+    console.log('All logs cleared');
+  }
+}
+
+function startNewSession() {
+  currentSession = {
+    timestamp: new Date().toISOString(),
+    duration: totalSeconds,
+    checkpointsCount: 0,
+    checkpointDuration: checkpointDurationSeconds,
+    checkpointInterval: checkpointIntervalSeconds,
+    pausesCount: 0,
+    completed: false,
+    startTime: Date.now()
+  };
+  console.log('New session started:', currentSession);
+}
+
+function endSession(completed = true) {
+  if (currentSession) {
+    currentSession.completed = completed;
+    currentSession.actualDuration = Math.floor((Date.now() - currentSession.startTime) / 1000);
+    addSessionLog(currentSession);
+    currentSession = null;
+  }
+}
+
+function incrementCheckpointCount() {
+  if (currentSession && logsConfig.logCheckpoints) {
+    currentSession.checkpointsCount++;
+    console.log('Checkpoint count incremented:', currentSession.checkpointsCount);
+  }
+}
+
+function incrementPauseCount() {
+  if (currentSession && logsConfig.logPauses) {
+    currentSession.pausesCount++;
+    console.log('Pause count incremented:', currentSession.pausesCount);
   }
 }
 
@@ -442,6 +850,7 @@ function togglePause() {
     isPaused = true;
     pauseBtn.textContent = "Reprendre";
     pauseBtn.style.background = "#4caf50";
+    incrementPauseCount();
     console.log("Timer paused");
   }
 }
@@ -471,6 +880,7 @@ function skipPhase() {
         ? `${durationMin} minute(s)${durationSec > 0 ? ` et ${durationSec} seconde(s)` : ''}`
         : `${durationSec} seconde(s)`;
       console.log("Work phase skipped, starting checkpoint");
+      incrementCheckpointCount();
       sendNotification("Pause checkpoint !", `Prenez une pause de ${durationText}.`);
     } else {
       console.log("No checkpoint configured, cannot skip work phase");
@@ -489,6 +899,9 @@ function skipPhase() {
         alert("Format invalide. Utilise par exemple 5m, 1h ou 30s.");
         return;
       }
+
+      // Start new session for logging
+      startNewSession();
 
       // Show pause and skip buttons
       document.getElementById("pauseBtn").style.display = "inline-block";
@@ -607,6 +1020,7 @@ function skipPhase() {
               ? `${durationMin} minute(s)${durationSec > 0 ? ` et ${durationSec} seconde(s)` : ''}`
               : `${durationSec} seconde(s)`;
             console.log("Checkpoint déclenché ! Notification envoyée.");
+            incrementCheckpointCount();
             sendNotification("Pause checkpoint !", `Prenez une pause de ${durationText}.`);
           }
 
@@ -617,6 +1031,7 @@ function skipPhase() {
             bar.style.width = "100%";
             totalBar.style.width = "100%";
             bar.classList.remove("checkpoint");
+            endSession(true); // Session completed successfully
           }
         }
       }, 1000);

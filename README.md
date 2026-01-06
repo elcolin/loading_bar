@@ -11,6 +11,7 @@ Un minuteur web élégant avec barre de progression, système de pauses automati
 - ☕ **Système de checkpoints** : Pauses automatiques à intervalles réguliers
 - 📊 **Barre de progression visuelle** : Suivez votre avancement en temps réel
 - 📝 **Notes personnelles** : Prenez des notes pendant vos sessions de travail avec sauvegarde automatique
+- 📈 **Historique des sessions** : Enregistrez et analysez automatiquement toutes vos sessions de travail
 - 🎨 **Interface élégante** : Design sombre et moderne
 
 ## Installation et Utilisation
@@ -231,6 +232,96 @@ L'application intègre un système de prise de notes pour vous permettre de gard
 - Vos notes personnelles ne seront jamais commitées dans le dépôt Git
 
 ![Notes personnelles](https://github.com/user-attachments/assets/795c8ecb-b848-4b1f-af7c-0aa89487f4ab)
+
+## Historique des Sessions
+
+### Vue d'ensemble
+
+L'application enregistre automatiquement toutes vos sessions de travail dans un panneau dédié sur le côté gauche de l'interface. Cette fonctionnalité vous permet de suivre votre productivité et d'analyser vos habitudes de travail au fil du temps.
+
+![Historique des sessions](https://github.com/user-attachments/assets/91756515-98f7-462f-a189-14ec3a252854)
+
+### Informations enregistrées
+
+Chaque session enregistre automatiquement :
+- 📅 **Date et heure** : Horodatage précis de début de session
+- ⏱️ **Durée** : Temps total de la session
+- ☕ **Checkpoints** : Nombre de pauses automatiques prises
+- ⏸️ **Durée de pause** : Configuration des pauses checkpoint
+- 🔄 **Intervalle** : Fréquence des pauses
+- ⏸️ **Pauses manuelles** : Nombre de pauses manuelles effectuées
+- ✅ **Statut** : Session complétée ou interrompue
+
+![Sessions multiples](https://github.com/user-attachments/assets/55be647f-8e6d-4533-9d87-67bf37f19119)
+
+### Configuration des paramètres
+
+Le panneau de logs offre trois options configurables :
+
+1. **Enregistrer automatiquement les sessions**
+   - Active/désactive l'enregistrement automatique
+   - Les sessions ne seront pas enregistrées si cette option est désactivée
+
+2. **Inclure les détails des checkpoints**
+   - Affiche/masque les informations détaillées sur les pauses
+   - Utile pour une vue simplifiée
+
+3. **Enregistrer les pauses manuelles**
+   - Compte/ignore les pauses manuelles dans les statistiques
+   - Permet de différencier les pauses automatiques des manuelles
+
+Toutes les configurations sont sauvegardées automatiquement dans localStorage.
+
+### Gestion des logs
+
+#### Supprimer un log
+
+Cliquez sur "🗑️ Supprimer" sous une entrée pour la supprimer définitivement.
+
+#### Effacer tous les logs
+
+Cliquez sur le bouton "🗑️" en haut à droite du panneau pour effacer tout l'historique.
+
+#### Exporter les données
+
+Cliquez sur le bouton "📥" pour exporter toutes vos sessions au format CSV. Le fichier exporté contient :
+- Date et heure de chaque session
+- Durée en secondes (facilite les calculs)
+- Nombre de checkpoints
+- Configuration des pauses
+- Nombre de pauses manuelles
+- Statut de complétion
+
+**Format du fichier** : `session_logs_YYYY-MM-DD.csv`
+
+### Utilisation pour l'analyse de données
+
+Le format CSV permet une analyse facile avec des outils comme :
+- **Excel / Google Sheets** : Tableaux croisés dynamiques, graphiques
+- **Python / Pandas** : Analyse statistique avancée
+- **R** : Visualisations et modèles statistiques
+- **Power BI / Tableau** : Dashboards interactifs
+
+#### Exemple d'analyse
+
+```csv
+Date,Heure,Durée (s),Checkpoints,Durée pause (s),Intervalle (s),Pauses manuelles,Complétée
+06/01/2026,11:38:55,6,1,2,4,0,Oui
+06/01/2026,11:37:42,10,2,0,0,0,Oui
+```
+
+Avec ces données, vous pouvez :
+- Calculer le temps de travail total par jour/semaine/mois
+- Analyser l'efficacité des pauses checkpoint
+- Identifier les moments de la journée les plus productifs
+- Mesurer votre constance dans les sessions de travail
+
+### Protection de la vie privée
+
+- Les logs sont **stockés localement** dans votre navigateur (localStorage)
+- **Aucune donnée n'est envoyée sur Internet**
+- Les fichiers exportés restent sur votre ordinateur
+- Vous contrôlez totalement vos données
 
 ## Compatibilité Navigateur
 
