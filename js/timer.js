@@ -18,7 +18,7 @@ let checkpointDurationSeconds = 0;
 let checkpointIntervalSeconds = 0;
 let isInCheckpoint = false;
 let checkpointRemaining = 0;
-let checkpointSessionCount = 0; // Track the number of checkpoint sessions in current timer session
+let checkpointSessionCount = 0; // Track checkpoint number within current timer session
 
 // Store timer state for pause/resume
 let totalSeconds = 0;

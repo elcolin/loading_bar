@@ -459,7 +459,7 @@ function renderLogs() {
           cpSessionItem.style.marginBottom = '3px';
           
           const cpDate = new Date(cpSession.timestamp);
-          const cpTimeStr = cpDate.toLocaleTimeString('en-US', { 
+          const cpTimeStr = cpDate.toLocaleTimeString(undefined, { 
             hour: '2-digit', 
             minute: '2-digit',
             second: '2-digit'
@@ -655,8 +655,7 @@ export function registerCheckpointSession(checkpointNumber, duration) {
     const checkpointSession = {
       checkpointNumber,
       timestamp: new Date().toISOString(),
-      duration,
-      type: 'checkpoint_break'
+      duration
     };
     
     if (!currentSession.checkpointSessions) {
