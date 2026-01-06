@@ -585,11 +585,14 @@ function addSessionLog(session) {
   console.log('Session logged:', session);
 }
 
-function deleteLog(index) {
+function deleteLog(logId) {
   if (confirm('Supprimer cette session des logs ?')) {
-    sessionLogs.splice(index, 1);
-    saveLogs();
-    renderLogs();
+    const index = sessionLogs.findIndex(log => log.id === logId);
+    if (index !== -1) {
+      sessionLogs.splice(index, 1);
+      saveLogs();
+      renderLogs();
+    }
   }
 }
 
@@ -604,7 +607,7 @@ function renderLogs() {
   // Clear container
   container.innerHTML = '';
   
-  sessionLogs.forEach((log, index) => {
+  sessionLogs.forEach((log) => {
     const date = new Date(log.timestamp);
     const dateStr = date.toLocaleDateString('fr-FR', { 
       day: '2-digit', 
@@ -684,7 +687,7 @@ function renderLogs() {
     const deleteBtn = document.createElement('div');
     deleteBtn.className = 'log-delete';
     deleteBtn.textContent = '🗑️ Supprimer';
-    deleteBtn.addEventListener('click', () => deleteLog(index));
+    deleteBtn.addEventListener('click', () => deleteLog(log.id));
     logEntry.appendChild(deleteBtn);
     
     container.appendChild(logEntry);
@@ -753,6 +756,7 @@ function clearAllLogs() {
 
 function startNewSession() {
   currentSession = {
+    id: Date.now() + '_' + Math.random().toString(36).substr(2, 9), // Unique ID
     timestamp: new Date().toISOString(),
     duration: totalSeconds,
     checkpointsCount: 0,
