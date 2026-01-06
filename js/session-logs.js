@@ -143,17 +143,8 @@ function calculateTodayWorkTime() {
     
     // Only count sessions from today
     if (logDate.getTime() === today.getTime()) {
-      let sessionTotal = log.duration;
-      
-      // Add checkpoint break times if checkpoint sessions are tracked
-      if (log.checkpointSessions && log.checkpointSessions.length > 0) {
-        const checkpointTime = log.checkpointSessions.reduce((cpTotal, cpSession) => {
-          return cpTotal + cpSession.duration;
-        }, 0);
-        sessionTotal += checkpointTime;
-      }
-      
-      return total + sessionTotal;
+      // Only count the actual work duration, not checkpoint breaks
+      return total + log.duration;
     }
     return total;
   }, 0);
