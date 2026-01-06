@@ -3,7 +3,7 @@
  */
 
 import { sendNotification, isNotificationPermissionGranted } from './notifications.js';
-import { startNewSession, endSession, incrementCheckpointCount, incrementPauseCount } from './session-logs.js';
+import { startNewSession, endSession, incrementCheckpointCount, incrementPauseCount, registerCheckpointSession } from './session-logs.js';
 import { TIMER_STATE_KEY, saveToStorage, loadFromStorage, removeFromStorage } from './storage.js';
 
 let interval = null;
@@ -18,6 +18,7 @@ let checkpointDurationSeconds = 0;
 let checkpointIntervalSeconds = 0;
 let isInCheckpoint = false;
 let checkpointRemaining = 0;
+let checkpointSessionCount = 0; // Track the number of checkpoint sessions in current timer session
 
 // Store timer state for pause/resume
 let totalSeconds = 0;
@@ -236,6 +237,8 @@ export function skipPhase() {
         : `${durationSec} second(s)`;
       console.log("Work phase skipped, starting checkpoint");
       incrementCheckpointCount();
+      checkpointSessionCount++;
+      registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
       sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
     } else {
       console.log("No checkpoint configured, cannot skip work phase");
@@ -324,6 +327,8 @@ function startTimerInterval() {
           : `${durationSec} second(s)`;
         console.log("Checkpoint triggered! Notification sent.");
         incrementCheckpointCount();
+        checkpointSessionCount++;
+        registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
         sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
       }
 
@@ -420,6 +425,7 @@ export function startTimer() {
   remaining = totalSeconds;
   workTimeElapsed = 0;
   isInCheckpoint = false;
+  checkpointSessionCount = 0; // Reset checkpoint session count for new timer
   bar.style.width = "0%";
   totalBar.style.width = "0%";
   bar.classList.remove("checkpoint");

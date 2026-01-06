@@ -143,7 +143,17 @@ function calculateTodayWorkTime() {
     
     // Only count sessions from today
     if (logDate.getTime() === today.getTime()) {
-      return total + log.duration;
+      let sessionTotal = log.duration;
+      
+      // Add checkpoint break times if checkpoint sessions are tracked
+      if (log.checkpointSessions && log.checkpointSessions.length > 0) {
+        const checkpointTime = log.checkpointSessions.reduce((cpTotal, cpSession) => {
+          return cpTotal + cpSession.duration;
+        }, 0);
+        sessionTotal += checkpointTime;
+      }
+      
+      return total + sessionTotal;
     }
     return total;
   }, 0);
@@ -431,6 +441,58 @@ function renderLogs() {
         ciDetail.textContent = `🔄 Interval: ${ciDur}`;
         logEntry.appendChild(ciDetail);
       }
+      
+      // Add checkpoint sessions dropdown if available
+      if (log.checkpointSessions && log.checkpointSessions.length > 0) {
+        const checkpointSessionsToggle = document.createElement('div');
+        checkpointSessionsToggle.className = 'checkpoint-sessions-toggle';
+        checkpointSessionsToggle.textContent = `▼ View checkpoint sessions (${log.checkpointSessions.length})`;
+        checkpointSessionsToggle.style.cursor = 'pointer';
+        checkpointSessionsToggle.style.color = '#2196f3';
+        checkpointSessionsToggle.style.fontSize = '11px';
+        checkpointSessionsToggle.style.marginTop = '5px';
+        
+        const checkpointSessionsList = document.createElement('div');
+        checkpointSessionsList.className = 'checkpoint-sessions-list';
+        checkpointSessionsList.style.display = 'none';
+        checkpointSessionsList.style.marginTop = '8px';
+        checkpointSessionsList.style.marginLeft = '10px';
+        checkpointSessionsList.style.paddingLeft = '10px';
+        checkpointSessionsList.style.borderLeft = '2px solid #ff9800';
+        
+        log.checkpointSessions.forEach((cpSession) => {
+          const cpSessionItem = document.createElement('div');
+          cpSessionItem.className = 'checkpoint-session-item';
+          cpSessionItem.style.fontSize = '10px';
+          cpSessionItem.style.color = '#999';
+          cpSessionItem.style.marginBottom = '3px';
+          
+          const cpDate = new Date(cpSession.timestamp);
+          const cpTimeStr = cpDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+          });
+          const cpDurationStr = formatDuration(cpSession.duration);
+          
+          cpSessionItem.textContent = `☕ Checkpoint #${cpSession.checkpointNumber} at ${cpTimeStr} - ${cpDurationStr}`;
+          checkpointSessionsList.appendChild(cpSessionItem);
+        });
+        
+        checkpointSessionsToggle.addEventListener('click', () => {
+          const isVisible = checkpointSessionsList.style.display !== 'none';
+          if (isVisible) {
+            checkpointSessionsList.style.display = 'none';
+            checkpointSessionsToggle.textContent = `▼ View checkpoint sessions (${log.checkpointSessions.length})`;
+          } else {
+            checkpointSessionsList.style.display = 'block';
+            checkpointSessionsToggle.textContent = `▲ Hide checkpoint sessions (${log.checkpointSessions.length})`;
+          }
+        });
+        
+        logEntry.appendChild(checkpointSessionsToggle);
+        logEntry.appendChild(checkpointSessionsList);
+      }
     }
 
     if (log.pausesCount > 0 && logsConfig.logPauses) {
@@ -559,7 +621,8 @@ export function startNewSession(totalSeconds, checkpointDuration, checkpointInte
     checkpointInterval: checkpointInterval,
     pausesCount: 0,
     completed: false,
-    startTime: Date.now()
+    startTime: Date.now(),
+    checkpointSessions: [] // Array to store individual checkpoint sessions
   };
   console.log('New session started:', currentSession);
 }
@@ -588,6 +651,29 @@ export function incrementCheckpointCount() {
   if (currentSession && logsConfig.logCheckpoints) {
     currentSession.checkpointsCount++;
     console.log('Checkpoint count incremented:', currentSession.checkpointsCount);
+  }
+}
+
+/**
+ * Register a checkpoint session when a checkpoint break starts
+ * @param {number} checkpointNumber - The checkpoint number (1-indexed)
+ * @param {number} duration - Duration of the checkpoint break in seconds
+ */
+export function registerCheckpointSession(checkpointNumber, duration) {
+  if (currentSession && logsConfig.logCheckpoints) {
+    const checkpointSession = {
+      checkpointNumber,
+      timestamp: new Date().toISOString(),
+      duration,
+      type: 'checkpoint_break'
+    };
+    
+    if (!currentSession.checkpointSessions) {
+      currentSession.checkpointSessions = [];
+    }
+    
+    currentSession.checkpointSessions.push(checkpointSession);
+    console.log('Checkpoint session registered:', checkpointSession);
   }
 }
 
