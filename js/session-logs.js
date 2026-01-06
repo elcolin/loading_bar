@@ -3,6 +3,7 @@
  */
 
 import { LOGS_STORAGE_KEY, LOGS_CONFIG_KEY, saveToStorage, loadFromStorage } from './storage.js';
+import { refreshStatistics } from './statistics.js';
 
 let sessionLogs = [];
 let logsConfig = {
@@ -91,6 +92,7 @@ function addSessionLog(session) {
   saveLogs();
   renderLogs();
   updateTotalWorkTimeDisplay();
+  refreshStatistics();
   console.log('Session logged:', session);
 }
 
@@ -106,6 +108,7 @@ function deleteLog(logId) {
       saveLogs();
       renderLogs();
       updateTotalWorkTimeDisplay();
+      refreshStatistics();
     }
   }
 }
@@ -340,6 +343,7 @@ function handleSessionFormSubmit(event) {
       saveLogs();
       renderLogs();
       updateTotalWorkTimeDisplay();
+      refreshStatistics();
       console.log('Session updated:', sessionLogs[sessionIndex]);
     }
   } else {
@@ -358,6 +362,7 @@ function handleSessionFormSubmit(event) {
     saveLogs();
     renderLogs();
     updateTotalWorkTimeDisplay();
+    refreshStatistics();
     console.log('New session added:', newSession);
   }
   
@@ -365,134 +370,131 @@ function handleSessionFormSubmit(event) {
 }
 
 /**
- * Render logs to the UI
+ * Render a single log entry
+ * @param {Object} log - Log data
+ * @param {HTMLElement} container - Container to append to
+ * @param {boolean} isInProgress - Whether this is the current in-progress session
  */
-function renderLogs() {
-  const container = document.getElementById('logsContainer');
+function renderLogEntry(log, container, isInProgress = false) {
+  const date = new Date(log.timestamp);
+  const dateStr = date.toLocaleDateString('en-US', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+  const timeStr = date.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
   
-  if (sessionLogs.length === 0) {
-    container.innerHTML = '<div class="logs-empty">No sessions recorded</div>';
-    return;
+  const durationStr = formatDuration(log.duration);
+
+  const hasCheckpoints = log.checkpointsCount > 0;
+  const checkpointClass = hasCheckpoints ? 'with-checkpoint' : '';
+  const inProgressClass = isInProgress ? 'in-progress' : '';
+
+  // Create log entry element
+  const logEntry = document.createElement('div');
+  logEntry.className = `log-entry ${checkpointClass} ${inProgressClass}`;
+  
+  // Create date header
+  const logDate = document.createElement('div');
+  logDate.className = 'log-date';
+  logDate.textContent = isInProgress 
+    ? `🔴 IN PROGRESS - ${dateStr} - ${timeStr}` 
+    : `${dateStr} - ${timeStr}`;
+  logEntry.appendChild(logDate);
+  
+  // Create duration detail
+  const durationDetail = document.createElement('div');
+  durationDetail.className = 'log-detail';
+  durationDetail.textContent = `⏱️ Duration: ${durationStr}`;
+  logEntry.appendChild(durationDetail);
+  
+  if (hasCheckpoints && logsConfig.logCheckpoints) {
+    const checkpointDetail = document.createElement('div');
+    checkpointDetail.className = 'log-detail';
+    checkpointDetail.textContent = `☕ Checkpoints: ${log.checkpointsCount}`;
+    logEntry.appendChild(checkpointDetail);
+    
+    if (log.checkpointDuration) {
+      const cpDur = formatDuration(log.checkpointDuration);
+      const cpDurationDetail = document.createElement('div');
+      cpDurationDetail.className = 'log-detail';
+      cpDurationDetail.textContent = `⏸️ Break duration: ${cpDur}`;
+      logEntry.appendChild(cpDurationDetail);
+    }
+    
+    if (log.checkpointInterval) {
+      const ciDur = formatDuration(log.checkpointInterval);
+      const ciDetail = document.createElement('div');
+      ciDetail.className = 'log-detail';
+      ciDetail.textContent = `🔄 Interval: ${ciDur}`;
+      logEntry.appendChild(ciDetail);
+    }
+    
+    // Add checkpoint sessions dropdown if available
+    if (log.checkpointSessions && log.checkpointSessions.length > 0) {
+      const checkpointSessionsToggle = document.createElement('div');
+      checkpointSessionsToggle.className = 'checkpoint-sessions-toggle';
+      checkpointSessionsToggle.textContent = `▼ View checkpoint sessions (${log.checkpointSessions.length})`;
+      checkpointSessionsToggle.style.cursor = 'pointer';
+      checkpointSessionsToggle.style.color = '#2196f3';
+      checkpointSessionsToggle.style.fontSize = '11px';
+      checkpointSessionsToggle.style.marginTop = '5px';
+      
+      const checkpointSessionsList = document.createElement('div');
+      checkpointSessionsList.className = 'checkpoint-sessions-list';
+      checkpointSessionsList.style.display = 'none';
+      checkpointSessionsList.style.marginTop = '8px';
+      checkpointSessionsList.style.marginLeft = '10px';
+      checkpointSessionsList.style.paddingLeft = '10px';
+      checkpointSessionsList.style.borderLeft = '2px solid #ff9800';
+      
+      log.checkpointSessions.forEach((cpSession) => {
+        const cpSessionItem = document.createElement('div');
+        cpSessionItem.className = 'checkpoint-session-item';
+        cpSessionItem.style.fontSize = '10px';
+        cpSessionItem.style.color = '#999';
+        cpSessionItem.style.marginBottom = '3px';
+        
+        const cpDate = new Date(cpSession.timestamp);
+        const cpTimeStr = cpDate.toLocaleTimeString(undefined, { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        const cpDurationStr = formatDuration(cpSession.duration);
+        
+        cpSessionItem.textContent = `☕ Checkpoint #${cpSession.checkpointNumber} at ${cpTimeStr} - ${cpDurationStr}`;
+        checkpointSessionsList.appendChild(cpSessionItem);
+      });
+      
+      checkpointSessionsToggle.addEventListener('click', () => {
+        const isVisible = checkpointSessionsList.style.display === 'block';
+        if (isVisible) {
+          checkpointSessionsList.style.display = 'none';
+          checkpointSessionsToggle.textContent = `▼ View checkpoint sessions (${log.checkpointSessions.length})`;
+        } else {
+          checkpointSessionsList.style.display = 'block';
+          checkpointSessionsToggle.textContent = `▲ Hide checkpoint sessions (${log.checkpointSessions.length})`;
+        }
+      });
+      
+      logEntry.appendChild(checkpointSessionsToggle);
+      logEntry.appendChild(checkpointSessionsList);
+    }
   }
 
-  // Clear container
-  container.innerHTML = '';
-  
-  sessionLogs.forEach((log) => {
-    const date = new Date(log.timestamp);
-    const dateStr = date.toLocaleDateString('en-US', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    });
-    const timeStr = date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-    
-    const durationStr = formatDuration(log.duration);
+  if (log.pausesCount > 0 && logsConfig.logPauses) {
+    const pausesDetail = document.createElement('div');
+    pausesDetail.className = 'log-detail';
+    pausesDetail.textContent = `⏸️ Manual pauses: ${log.pausesCount}`;
+    logEntry.appendChild(pausesDetail);
+  }
 
-    const hasCheckpoints = log.checkpointsCount > 0;
-    const checkpointClass = hasCheckpoints ? 'with-checkpoint' : '';
-
-    // Create log entry element
-    const logEntry = document.createElement('div');
-    logEntry.className = `log-entry ${checkpointClass}`;
-    
-    // Create date header
-    const logDate = document.createElement('div');
-    logDate.className = 'log-date';
-    logDate.textContent = `${dateStr} - ${timeStr}`;
-    logEntry.appendChild(logDate);
-    
-    // Create duration detail
-    const durationDetail = document.createElement('div');
-    durationDetail.className = 'log-detail';
-    durationDetail.textContent = `⏱️ Duration: ${durationStr}`;
-    logEntry.appendChild(durationDetail);
-    
-    if (hasCheckpoints && logsConfig.logCheckpoints) {
-      const checkpointDetail = document.createElement('div');
-      checkpointDetail.className = 'log-detail';
-      checkpointDetail.textContent = `☕ Checkpoints: ${log.checkpointsCount}`;
-      logEntry.appendChild(checkpointDetail);
-      
-      if (log.checkpointDuration) {
-        const cpDur = formatDuration(log.checkpointDuration);
-        const cpDurationDetail = document.createElement('div');
-        cpDurationDetail.className = 'log-detail';
-        cpDurationDetail.textContent = `⏸️ Break duration: ${cpDur}`;
-        logEntry.appendChild(cpDurationDetail);
-      }
-      
-      if (log.checkpointInterval) {
-        const ciDur = formatDuration(log.checkpointInterval);
-        const ciDetail = document.createElement('div');
-        ciDetail.className = 'log-detail';
-        ciDetail.textContent = `🔄 Interval: ${ciDur}`;
-        logEntry.appendChild(ciDetail);
-      }
-      
-      // Add checkpoint sessions dropdown if available
-      if (log.checkpointSessions && log.checkpointSessions.length > 0) {
-        const checkpointSessionsToggle = document.createElement('div');
-        checkpointSessionsToggle.className = 'checkpoint-sessions-toggle';
-        checkpointSessionsToggle.textContent = `▼ View checkpoint sessions (${log.checkpointSessions.length})`;
-        checkpointSessionsToggle.style.cursor = 'pointer';
-        checkpointSessionsToggle.style.color = '#2196f3';
-        checkpointSessionsToggle.style.fontSize = '11px';
-        checkpointSessionsToggle.style.marginTop = '5px';
-        
-        const checkpointSessionsList = document.createElement('div');
-        checkpointSessionsList.className = 'checkpoint-sessions-list';
-        checkpointSessionsList.style.display = 'none';
-        checkpointSessionsList.style.marginTop = '8px';
-        checkpointSessionsList.style.marginLeft = '10px';
-        checkpointSessionsList.style.paddingLeft = '10px';
-        checkpointSessionsList.style.borderLeft = '2px solid #ff9800';
-        
-        log.checkpointSessions.forEach((cpSession) => {
-          const cpSessionItem = document.createElement('div');
-          cpSessionItem.className = 'checkpoint-session-item';
-          cpSessionItem.style.fontSize = '10px';
-          cpSessionItem.style.color = '#999';
-          cpSessionItem.style.marginBottom = '3px';
-          
-          const cpDate = new Date(cpSession.timestamp);
-          const cpTimeStr = cpDate.toLocaleTimeString(undefined, { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            second: '2-digit'
-          });
-          const cpDurationStr = formatDuration(cpSession.duration);
-          
-          cpSessionItem.textContent = `☕ Checkpoint #${cpSession.checkpointNumber} at ${cpTimeStr} - ${cpDurationStr}`;
-          checkpointSessionsList.appendChild(cpSessionItem);
-        });
-        
-        checkpointSessionsToggle.addEventListener('click', () => {
-          const isVisible = checkpointSessionsList.style.display === 'block';
-          if (isVisible) {
-            checkpointSessionsList.style.display = 'none';
-            checkpointSessionsToggle.textContent = `▼ View checkpoint sessions (${log.checkpointSessions.length})`;
-          } else {
-            checkpointSessionsList.style.display = 'block';
-            checkpointSessionsToggle.textContent = `▲ Hide checkpoint sessions (${log.checkpointSessions.length})`;
-          }
-        });
-        
-        logEntry.appendChild(checkpointSessionsToggle);
-        logEntry.appendChild(checkpointSessionsList);
-      }
-    }
-
-    if (log.pausesCount > 0 && logsConfig.logPauses) {
-      const pausesDetail = document.createElement('div');
-      pausesDetail.className = 'log-detail';
-      pausesDetail.textContent = `⏸️ Manual pauses: ${log.pausesCount}`;
-      logEntry.appendChild(pausesDetail);
-    }
-
+  // Only show status and action buttons for completed sessions
+  if (!isInProgress) {
     const statusDetail = document.createElement('div');
     statusDetail.className = 'log-detail';
     statusDetail.textContent = log.completed ? '✅ Session completed' : '⚠️ Session interrupted';
@@ -511,8 +513,39 @@ function renderLogs() {
     deleteBtn.textContent = '🗑️ Delete';
     deleteBtn.addEventListener('click', () => deleteLog(log.id));
     logEntry.appendChild(deleteBtn);
-    
-    container.appendChild(logEntry);
+  } else {
+    const statusDetail = document.createElement('div');
+    statusDetail.className = 'log-detail';
+    statusDetail.style.color = '#ff9800';
+    statusDetail.textContent = '🔄 Session in progress...';
+    logEntry.appendChild(statusDetail);
+  }
+  
+  container.appendChild(logEntry);
+}
+
+/**
+ * Render logs to the UI
+ */
+function renderLogs() {
+  const container = document.getElementById('logsContainer');
+  
+  // Check if there's a current session and no saved logs
+  if (sessionLogs.length === 0 && !currentSession) {
+    container.innerHTML = '<div class="logs-empty">No sessions recorded</div>';
+    return;
+  }
+
+  // Clear container
+  container.innerHTML = '';
+  
+  // Show current in-progress session first if it exists
+  if (currentSession && logsConfig.autoLogEnabled) {
+    renderLogEntry(currentSession, container, true);
+  }
+  
+  sessionLogs.forEach((log) => {
+    renderLogEntry(log, container, false);
   });
 }
 
@@ -579,6 +612,7 @@ function clearAllLogs() {
     saveLogs();
     renderLogs();
     updateTotalWorkTimeDisplay();
+    refreshStatistics();
     console.log('All logs cleared');
   }
 }
@@ -612,10 +646,16 @@ export function startNewSession(totalSeconds, checkpointDuration, checkpointInte
     checkpointInterval: checkpointInterval,
     pausesCount: 0,
     completed: false,
+    inProgress: true, // Mark session as in progress
     startTime: Date.now(),
     checkpointSessions: [] // Array to store individual checkpoint sessions
   };
   console.log('New session started:', currentSession);
+  
+  // Add in-progress session to display if auto-logging is enabled
+  if (logsConfig.autoLogEnabled) {
+    renderLogs();
+  }
 }
 
 /**
@@ -626,6 +666,7 @@ export function startNewSession(totalSeconds, checkpointDuration, checkpointInte
 export function endSession(completed = true, actualElapsedSeconds = null) {
   if (currentSession) {
     currentSession.completed = completed;
+    currentSession.inProgress = false; // Mark session as no longer in progress
     // If actualElapsedSeconds is provided (stopped session), use it instead of the aimed duration
     if (actualElapsedSeconds !== null) {
       currentSession.duration = actualElapsedSeconds;
@@ -642,6 +683,11 @@ export function incrementCheckpointCount() {
   if (currentSession && logsConfig.logCheckpoints) {
     currentSession.checkpointsCount++;
     console.log('Checkpoint count incremented:', currentSession.checkpointsCount);
+    
+    // Update the display in real-time
+    if (logsConfig.autoLogEnabled) {
+      renderLogs();
+    }
   }
 }
 
@@ -664,6 +710,11 @@ export function registerCheckpointSession(checkpointNumber, duration) {
     
     currentSession.checkpointSessions.push(checkpointSession);
     console.log('Checkpoint session registered:', checkpointSession);
+    
+    // Update the display in real-time
+    if (logsConfig.autoLogEnabled) {
+      renderLogs();
+    }
   }
 }
 

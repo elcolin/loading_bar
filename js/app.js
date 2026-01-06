@@ -4,6 +4,7 @@
 
 import { initializeNotes } from './notes.js';
 import { initializeSessionLogs } from './session-logs.js';
+import { initializeStatistics } from './statistics.js';
 import { requestNotificationPermission, sendTestNotification } from './notifications.js';
 import { startTimer, togglePause, skipPhase, stopTimer, restoreTimerState } from './timer.js';
 
@@ -11,6 +12,7 @@ import { startTimer, togglePause, skipPhase, stopTimer, restoreTimerState } from
 document.addEventListener('DOMContentLoaded', () => {
   initializeNotes();
   initializeSessionLogs();
+  initializeStatistics();
   setupEventListeners();
   
   // Restore timer state if available

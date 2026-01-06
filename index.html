@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Timer with Loading Bar</title>
   <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 
@@ -11,10 +12,27 @@
   <div class="logs-header">
     <span class="logs-title">📊 Session History</span>
     <div class="logs-actions">
+      <button id="statsBtn" title="Toggle statistics">📈</button>
       <button id="addSessionBtn" title="Add manual session">➕</button>
       <button id="exportLogsBtn" title="Export logs">📥</button>
       <button id="clearLogsBtn" title="Clear all logs">🗑️</button>
     </div>
+  </div>
+  
+  <div id="statsPanel" class="stats-panel" style="display: none;">
+    <div class="stats-header">
+      <span class="stats-title">📈 Statistics</span>
+      <select id="statsTimeRange" class="stats-time-range">
+        <option value="day">Today (Hourly)</option>
+        <option value="week">Last 7 Days</option>
+        <option value="month">This Month</option>
+        <option value="year">This Year</option>
+      </select>
+    </div>
+    <div class="stats-chart-container">
+      <canvas id="statsChart"></canvas>
+    </div>
+    <div id="statsSummary" class="stats-summary"></div>
   </div>
   
   <div class="logs-config">
