@@ -273,9 +273,22 @@ function handleSessionFormSubmit(event) {
   const durationStr = document.getElementById('sessionDuration').value.trim();
   const checkpointDurationStr = document.getElementById('sessionCheckpointDuration').value.trim();
   const checkpointIntervalStr = document.getElementById('sessionCheckpointInterval').value.trim();
-  const checkpointsCount = parseInt(document.getElementById('sessionCheckpointsCount').value, 10);
-  const pausesCount = parseInt(document.getElementById('sessionPausesCount').value, 10);
+  const checkpointsCountValue = document.getElementById('sessionCheckpointsCount').value;
+  const pausesCountValue = document.getElementById('sessionPausesCount').value;
   const completed = document.getElementById('sessionCompleted').checked;
+  
+  // Validate date and time
+  if (!dateValue || !timeValue) {
+    alert('Please provide both date and time.');
+    return;
+  }
+  
+  // Create timestamp from date and time and validate
+  const timestamp = new Date(`${dateValue}T${timeValue}`);
+  if (isNaN(timestamp.getTime())) {
+    alert('Invalid date or time. Please check your inputs.');
+    return;
+  }
   
   // Validate duration
   const duration = parseTimeString(durationStr);
@@ -288,8 +301,26 @@ function handleSessionFormSubmit(event) {
   const checkpointDuration = checkpointDurationStr ? parseTimeString(checkpointDurationStr) : 0;
   const checkpointInterval = checkpointIntervalStr ? parseTimeString(checkpointIntervalStr) : 0;
   
-  // Create timestamp from date and time
-  const timestamp = new Date(`${dateValue}T${timeValue}`).toISOString();
+  // Validate checkpoint configuration consistency
+  if ((checkpointDuration > 0 && checkpointInterval === 0) || (checkpointDuration === 0 && checkpointInterval > 0)) {
+    if (!confirm('Warning: Checkpoint configuration is incomplete. Both break duration and interval should be provided for checkpoints to work. Continue anyway?')) {
+      return;
+    }
+  }
+  
+  // Validate and parse count values
+  const checkpointsCount = checkpointsCountValue ? parseInt(checkpointsCountValue, 10) : 0;
+  const pausesCount = pausesCountValue ? parseInt(pausesCountValue, 10) : 0;
+  
+  if (isNaN(checkpointsCount) || checkpointsCount < 0) {
+    alert('Invalid number of checkpoints. Must be a non-negative number.');
+    return;
+  }
+  
+  if (isNaN(pausesCount) || pausesCount < 0) {
+    alert('Invalid number of manual pauses. Must be a non-negative number.');
+    return;
+  }
   
   if (editingSessionId) {
     // Edit existing session
@@ -297,7 +328,7 @@ function handleSessionFormSubmit(event) {
     if (sessionIndex !== -1) {
       sessionLogs[sessionIndex] = {
         ...sessionLogs[sessionIndex],
-        timestamp,
+        timestamp: timestamp.toISOString(),
         duration,
         checkpointDuration,
         checkpointInterval,
@@ -314,7 +345,7 @@ function handleSessionFormSubmit(event) {
     // Add new session
     const newSession = {
       id: generateSessionId(),
-      timestamp,
+      timestamp: timestamp.toISOString(),
       duration,
       checkpointDuration,
       checkpointInterval,

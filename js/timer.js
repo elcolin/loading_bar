@@ -84,8 +84,14 @@ export function restoreTimerState() {
       remaining = Math.max(0, state.remaining - elapsedSinceSave);
       workTimeElapsed = state.workTimeElapsed + elapsedSinceSave;
     }
+    // For non-paused timers, we need to set up the time tracking as if the timer just started
+    // The elapsed time is already accounted for in the adjusted 'remaining' value
+    timerStartTime = Date.now();
+    elapsedBeforePause = 0;
   } else {
     remaining = state.remaining;
+    timerStartTime = 0;
+    elapsedBeforePause = state.elapsedBeforePause;
   }
 
   // If timer has finished, don't restore
@@ -103,13 +109,9 @@ export function restoreTimerState() {
   if (isPaused) {
     document.getElementById("pauseBtn").textContent = "Resume";
     document.getElementById("pauseBtn").style.background = "#4caf50";
-    timerStartTime = 0;
-    elapsedBeforePause = state.elapsedBeforePause;
   } else {
     document.getElementById("pauseBtn").textContent = "Pause";
     document.getElementById("pauseBtn").style.background = "#ff9800";
-    timerStartTime = Date.now();
-    elapsedBeforePause = state.elapsedBeforePause + elapsedSinceSave * 1000;
   }
 
   // Restore progress bars and labels
