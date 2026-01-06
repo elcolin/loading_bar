@@ -601,7 +601,10 @@ function renderLogs() {
     return;
   }
 
-  container.innerHTML = sessionLogs.map((log, index) => {
+  // Clear container
+  container.innerHTML = '';
+  
+  sessionLogs.forEach((log, index) => {
     const date = new Date(log.timestamp);
     const dateStr = date.toLocaleDateString('fr-FR', { 
       day: '2-digit', 
@@ -622,42 +625,70 @@ function renderLogs() {
     const hasCheckpoints = log.checkpointsCount > 0;
     const checkpointClass = hasCheckpoints ? 'with-checkpoint' : '';
 
-    let details = `<div class="log-detail">⏱️ Durée: ${durationStr}</div>`;
+    // Create log entry element
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry ${checkpointClass}`;
+    
+    // Create date header
+    const logDate = document.createElement('div');
+    logDate.className = 'log-date';
+    logDate.textContent = `${dateStr} - ${timeStr}`;
+    logEntry.appendChild(logDate);
+    
+    // Create duration detail
+    const durationDetail = document.createElement('div');
+    durationDetail.className = 'log-detail';
+    durationDetail.textContent = `⏱️ Durée: ${durationStr}`;
+    logEntry.appendChild(durationDetail);
     
     if (hasCheckpoints && logsConfig.logCheckpoints) {
-      details += `<div class="log-detail">☕ Checkpoints: ${log.checkpointsCount}</div>`;
+      const checkpointDetail = document.createElement('div');
+      checkpointDetail.className = 'log-detail';
+      checkpointDetail.textContent = `☕ Checkpoints: ${log.checkpointsCount}`;
+      logEntry.appendChild(checkpointDetail);
+      
       if (log.checkpointDuration) {
         const cpMin = Math.floor(log.checkpointDuration / 60);
         const cpSec = log.checkpointDuration % 60;
         const cpDur = cpMin > 0 ? `${cpMin}m ${cpSec}s` : `${cpSec}s`;
-        details += `<div class="log-detail">⏸️ Durée pause: ${cpDur}</div>`;
+        const cpDurationDetail = document.createElement('div');
+        cpDurationDetail.className = 'log-detail';
+        cpDurationDetail.textContent = `⏸️ Durée pause: ${cpDur}`;
+        logEntry.appendChild(cpDurationDetail);
       }
+      
       if (log.checkpointInterval) {
         const ciMin = Math.floor(log.checkpointInterval / 60);
         const ciSec = log.checkpointInterval % 60;
         const ciDur = ciMin > 0 ? `${ciMin}m ${ciSec}s` : `${ciSec}s`;
-        details += `<div class="log-detail">🔄 Intervalle: ${ciDur}</div>`;
+        const ciDetail = document.createElement('div');
+        ciDetail.className = 'log-detail';
+        ciDetail.textContent = `🔄 Intervalle: ${ciDur}`;
+        logEntry.appendChild(ciDetail);
       }
     }
 
     if (log.pausesCount > 0 && logsConfig.logPauses) {
-      details += `<div class="log-detail">⏸️ Pauses manuelles: ${log.pausesCount}</div>`;
+      const pausesDetail = document.createElement('div');
+      pausesDetail.className = 'log-detail';
+      pausesDetail.textContent = `⏸️ Pauses manuelles: ${log.pausesCount}`;
+      logEntry.appendChild(pausesDetail);
     }
 
-    if (log.completed) {
-      details += `<div class="log-detail">✅ Session complétée</div>`;
-    } else {
-      details += `<div class="log-detail">⚠️ Session interrompue</div>`;
-    }
-
-    return `
-      <div class="log-entry ${checkpointClass}">
-        <div class="log-date">${dateStr} - ${timeStr}</div>
-        ${details}
-        <div class="log-delete" onclick="deleteLog(${index})">🗑️ Supprimer</div>
-      </div>
-    `;
-  }).join('');
+    const statusDetail = document.createElement('div');
+    statusDetail.className = 'log-detail';
+    statusDetail.textContent = log.completed ? '✅ Session complétée' : '⚠️ Session interrompue';
+    logEntry.appendChild(statusDetail);
+    
+    // Create delete button
+    const deleteBtn = document.createElement('div');
+    deleteBtn.className = 'log-delete';
+    deleteBtn.textContent = '🗑️ Supprimer';
+    deleteBtn.addEventListener('click', () => deleteLog(index));
+    logEntry.appendChild(deleteBtn);
+    
+    container.appendChild(logEntry);
+  });
 }
 
 function exportLogs() {
@@ -672,9 +703,20 @@ function exportLogs() {
     const date = new Date(log.timestamp);
     const dateStr = date.toLocaleDateString('fr-FR');
     const timeStr = date.toLocaleTimeString('fr-FR');
+    
+    // Helper function to escape CSV values
+    const escapeCsv = (value) => {
+      const strValue = String(value);
+      // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+      if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+        return '"' + strValue.replace(/"/g, '""') + '"';
+      }
+      return strValue;
+    };
+    
     return [
-      dateStr,
-      timeStr,
+      escapeCsv(dateStr),
+      escapeCsv(timeStr),
       log.duration,
       log.checkpointsCount || 0,
       log.checkpointDuration || 0,
@@ -726,7 +768,6 @@ function startNewSession() {
 function endSession(completed = true) {
   if (currentSession) {
     currentSession.completed = completed;
-    currentSession.actualDuration = Math.floor((Date.now() - currentSession.startTime) / 1000);
     addSessionLog(currentSession);
     currentSession = null;
   }
@@ -898,6 +939,11 @@ function skipPhase() {
       if (!totalSeconds) {
         alert("Format invalide. Utilise par exemple 5m, 1h ou 30s.");
         return;
+      }
+
+      // End previous session if one was active
+      if (currentSession) {
+        endSession(false); // Mark as interrupted
       }
 
       // Start new session for logging
