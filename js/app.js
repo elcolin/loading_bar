@@ -5,13 +5,19 @@
 import { initializeNotes } from './notes.js';
 import { initializeSessionLogs } from './session-logs.js';
 import { requestNotificationPermission, sendTestNotification } from './notifications.js';
-import { startTimer, togglePause, skipPhase, stopTimer } from './timer.js';
+import { startTimer, togglePause, skipPhase, stopTimer, restoreTimerState } from './timer.js';
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   initializeNotes();
   initializeSessionLogs();
   setupEventListeners();
+  
+  // Restore timer state if available
+  const restored = restoreTimerState();
+  if (restored) {
+    console.log('Timer state restored from previous session');
+  }
 });
 
 /**

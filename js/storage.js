@@ -5,6 +5,7 @@
 export const NOTES_STORAGE_KEY = 'timer_app_notes';
 export const LOGS_STORAGE_KEY = 'timer_app_session_logs';
 export const LOGS_CONFIG_KEY = 'timer_app_logs_config';
+export const TIMER_STATE_KEY = 'timer_app_state';
 
 /**
  * Save data to localStorage

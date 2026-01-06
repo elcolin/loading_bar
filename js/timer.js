@@ -4,6 +4,7 @@
 
 import { sendNotification, isNotificationPermissionGranted } from './notifications.js';
 import { startNewSession, endSession, incrementCheckpointCount, incrementPauseCount } from './session-logs.js';
+import { TIMER_STATE_KEY, saveToStorage, loadFromStorage, removeFromStorage } from './storage.js';
 
 let interval = null;
 let isPaused = false;
@@ -21,6 +22,126 @@ let checkpointRemaining = 0;
 // Store timer state for pause/resume
 let totalSeconds = 0;
 let remaining = 0;
+
+/**
+ * Save timer state to localStorage
+ */
+function saveTimerState() {
+  if (!interval) {
+    // No active timer, clear state
+    removeFromStorage(TIMER_STATE_KEY);
+    return;
+  }
+
+  const state = {
+    totalSeconds,
+    remaining,
+    isPaused,
+    timerStartTime,
+    elapsedBeforePause,
+    checkpointEnabled,
+    workTimeElapsed,
+    checkpointDurationSeconds,
+    checkpointIntervalSeconds,
+    isInCheckpoint,
+    checkpointRemaining,
+    savedAt: Date.now()
+  };
+
+  saveToStorage(TIMER_STATE_KEY, state);
+}
+
+/**
+ * Load timer state from localStorage and restore if valid
+ * @returns {boolean} True if state was restored, false otherwise
+ */
+export function restoreTimerState() {
+  const state = loadFromStorage(TIMER_STATE_KEY, null, true);
+  
+  if (!state) {
+    return false;
+  }
+
+  // Calculate how much time has elapsed since the state was saved
+  const elapsedSinceSave = Math.floor((Date.now() - state.savedAt) / 1000);
+  
+  // Restore the timer state variables
+  totalSeconds = state.totalSeconds;
+  isPaused = state.isPaused;
+  checkpointEnabled = state.checkpointEnabled;
+  workTimeElapsed = state.workTimeElapsed;
+  checkpointDurationSeconds = state.checkpointDurationSeconds;
+  checkpointIntervalSeconds = state.checkpointIntervalSeconds;
+  isInCheckpoint = state.isInCheckpoint;
+  checkpointRemaining = state.checkpointRemaining;
+
+  // Adjust remaining time based on elapsed time if not paused
+  if (!isPaused) {
+    if (isInCheckpoint) {
+      checkpointRemaining = Math.max(0, state.checkpointRemaining - elapsedSinceSave);
+      remaining = Math.max(0, state.remaining - elapsedSinceSave);
+    } else {
+      remaining = Math.max(0, state.remaining - elapsedSinceSave);
+      workTimeElapsed = state.workTimeElapsed + elapsedSinceSave;
+    }
+  } else {
+    remaining = state.remaining;
+  }
+
+  // If timer has finished, don't restore
+  if (remaining <= 0) {
+    removeFromStorage(TIMER_STATE_KEY);
+    return false;
+  }
+
+  // Restore UI state
+  document.getElementById("startBtn").style.display = "none";
+  document.getElementById("stopBtn").style.display = "inline-block";
+  document.getElementById("pauseBtn").style.display = "inline-block";
+  document.getElementById("skipBtn").style.display = "inline-block";
+
+  if (isPaused) {
+    document.getElementById("pauseBtn").textContent = "Resume";
+    document.getElementById("pauseBtn").style.background = "#4caf50";
+    timerStartTime = 0;
+    elapsedBeforePause = state.elapsedBeforePause;
+  } else {
+    document.getElementById("pauseBtn").textContent = "Pause";
+    document.getElementById("pauseBtn").style.background = "#ff9800";
+    timerStartTime = Date.now();
+    elapsedBeforePause = state.elapsedBeforePause + elapsedSinceSave * 1000;
+  }
+
+  // Restore progress bars and labels
+  const bar = document.getElementById("bar");
+  const totalBar = document.getElementById("totalBar");
+  const checkpointLabel = document.getElementById("checkpointLabel");
+
+  if (checkpointEnabled) {
+    checkpointLabel.textContent = "Next checkpoint";
+  } else {
+    checkpointLabel.textContent = "Progress";
+  }
+
+  if (isInCheckpoint) {
+    bar.classList.add("checkpoint");
+  } else {
+    bar.classList.remove("checkpoint");
+  }
+
+  // Start the timer interval
+  startTimerInterval();
+
+  console.log('Timer state restored:', state);
+  return true;
+}
+
+/**
+ * Clear saved timer state
+ */
+function clearTimerState() {
+  removeFromStorage(TIMER_STATE_KEY);
+}
 
 /**
  * Parse time string to seconds
@@ -121,6 +242,114 @@ export function skipPhase() {
 }
 
 /**
+ * Start the timer interval (extracted for use by both start and restore)
+ */
+function startTimerInterval() {
+  interval = setInterval(() => {
+    // Skip timer updates if paused
+    if (isPaused) {
+      return;
+    }
+    
+    if (isInCheckpoint) {
+      // Checkpoint timer
+      checkpointRemaining--;
+      const progress = ((checkpointDurationSeconds - checkpointRemaining) / checkpointDurationSeconds) * 100;
+      const bar = document.getElementById("bar");
+      bar.style.width = progress + "%";
+
+      // Update total progress bar
+      const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
+      const totalBar = document.getElementById("totalBar");
+      totalBar.style.width = totalProgress + "%";
+
+      const display = document.getElementById("timeDisplay");
+      display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)}`;
+
+      // Show total remaining time
+      const totalDisplay = document.getElementById("totalTimeDisplay");
+      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
+
+      if (checkpointRemaining <= 0) {
+        // End checkpoint, resume work
+        isInCheckpoint = false;
+        workTimeElapsed = 0;
+        bar.classList.remove("checkpoint");
+        sendNotification("Break over!", "Back to work. Good luck!");
+        console.log("Checkpoint ended, resuming work");
+      }
+    } else {
+      // Work timer
+      remaining--;
+      workTimeElapsed++;
+
+      // Update total progress bar
+      const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
+      const totalBar = document.getElementById("totalBar");
+      totalBar.style.width = totalProgress + "%";
+
+      const bar = document.getElementById("bar");
+      const display = document.getElementById("timeDisplay");
+
+      // Display time until next checkpoint (or total time if no checkpoint)
+      if (checkpointEnabled) {
+        // Time until next checkpoint
+        const timeUntilCheckpoint = Math.max(0, checkpointIntervalSeconds - workTimeElapsed);
+        const checkpointProgress = ((workTimeElapsed) / checkpointIntervalSeconds) * 100;
+        bar.style.width = checkpointProgress + "%";
+        display.textContent = `Next checkpoint in: ${formatTime(timeUntilCheckpoint)}`;
+      } else {
+        // No checkpoint, show total remaining time
+        const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
+        bar.style.width = progress + "%";
+        display.textContent = `Time remaining: ${formatTime(remaining)}`;
+      }
+
+      // Always show total remaining time in secondary display
+      const totalDisplay = document.getElementById("totalTimeDisplay");
+      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
+
+      // Check if checkpoint should trigger
+      if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
+        isInCheckpoint = true;
+        checkpointRemaining = checkpointDurationSeconds;
+        bar.classList.add("checkpoint");
+        bar.style.width = "0%";
+        const durationMin = Math.floor(checkpointDurationSeconds / 60);
+        const durationSec = checkpointDurationSeconds % 60;
+        const durationText = durationMin > 0 
+          ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
+          : `${durationSec} second(s)`;
+        console.log("Checkpoint triggered! Notification sent.");
+        incrementCheckpointCount();
+        sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
+      }
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        interval = null;
+        display.textContent = "Done.";
+        totalDisplay.textContent = "";
+        bar.style.width = "100%";
+        totalBar.style.width = "100%";
+        bar.classList.remove("checkpoint");
+        endSession(true); // Session completed successfully
+        clearTimerState();
+        
+        // Reset buttons
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("stopBtn").style.display = "none";
+        document.getElementById("pauseBtn").style.display = "none";
+        document.getElementById("skipBtn").style.display = "none";
+      }
+    }
+
+    // Save state after each tick
+    saveTimerState();
+  }, 1000);
+}
+
+/**
  * Start the timer
  */
 export function startTimer() {
@@ -184,8 +413,6 @@ export function startTimer() {
 
   const bar = document.getElementById("bar");
   const totalBar = document.getElementById("totalBar");
-  const display = document.getElementById("timeDisplay");
-  const totalDisplay = document.getElementById("totalTimeDisplay");
   const checkpointLabel = document.getElementById("checkpointLabel");
 
   remaining = totalSeconds;
@@ -202,94 +429,7 @@ export function startTimer() {
     checkpointLabel.textContent = "Progress";
   }
 
-  interval = setInterval(() => {
-    // Skip timer updates if paused
-    if (isPaused) {
-      return;
-    }
-    
-    if (isInCheckpoint) {
-      // Checkpoint timer
-      checkpointRemaining--;
-      const progress = ((checkpointDurationSeconds - checkpointRemaining) / checkpointDurationSeconds) * 100;
-      bar.style.width = progress + "%";
-
-      // Update total progress bar
-      const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
-      totalBar.style.width = totalProgress + "%";
-
-      display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)}`;
-
-      // Show total remaining time
-      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
-
-      if (checkpointRemaining <= 0) {
-        // End checkpoint, resume work
-        isInCheckpoint = false;
-        workTimeElapsed = 0;
-        bar.classList.remove("checkpoint");
-        sendNotification("Break over!", "Back to work. Good luck!");
-        console.log("Checkpoint ended, resuming work");
-      }
-    } else {
-      // Work timer
-      remaining--;
-      workTimeElapsed++;
-
-      // Update total progress bar
-      const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
-      totalBar.style.width = totalProgress + "%";
-
-      // Display time until next checkpoint (or total time if no checkpoint)
-      if (checkpointEnabled) {
-        // Time until next checkpoint
-        const timeUntilCheckpoint = Math.max(0, checkpointIntervalSeconds - workTimeElapsed);
-        const checkpointProgress = ((workTimeElapsed) / checkpointIntervalSeconds) * 100;
-        bar.style.width = checkpointProgress + "%";
-        display.textContent = `Next checkpoint in: ${formatTime(timeUntilCheckpoint)}`;
-      } else {
-        // No checkpoint, show total remaining time
-        const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
-        bar.style.width = progress + "%";
-        display.textContent = `Time remaining: ${formatTime(remaining)}`;
-      }
-
-      // Always show total remaining time in secondary display
-      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
-
-      // Check if checkpoint should trigger
-      if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
-        isInCheckpoint = true;
-        checkpointRemaining = checkpointDurationSeconds;
-        bar.classList.add("checkpoint");
-        bar.style.width = "0%";
-        const durationMin = Math.floor(checkpointDurationSeconds / 60);
-        const durationSec = checkpointDurationSeconds % 60;
-        const durationText = durationMin > 0 
-          ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
-          : `${durationSec} second(s)`;
-        console.log("Checkpoint triggered! Notification sent.");
-        incrementCheckpointCount();
-        sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
-      }
-
-      if (remaining <= 0) {
-        clearInterval(interval);
-        display.textContent = "Done.";
-        totalDisplay.textContent = "";
-        bar.style.width = "100%";
-        totalBar.style.width = "100%";
-        bar.classList.remove("checkpoint");
-        endSession(true); // Session completed successfully
-        
-        // Reset buttons
-        document.getElementById("startBtn").style.display = "inline-block";
-        document.getElementById("stopBtn").style.display = "none";
-        document.getElementById("pauseBtn").style.display = "none";
-        document.getElementById("skipBtn").style.display = "none";
-      }
-    }
-  }, 1000);
+  startTimerInterval();
 }
 
 /**
@@ -306,6 +446,9 @@ export function stopTimer() {
     
     // End session with actual elapsed time instead of aimed time
     endSession(false, actualElapsedSeconds);
+    
+    // Clear the saved timer state
+    clearTimerState();
     
     // Reset display
     const display = document.getElementById("timeDisplay");
