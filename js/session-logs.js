@@ -47,6 +47,7 @@ export function initializeSessionLogs() {
 
   // Add event listeners for log actions
   document.getElementById('exportLogsBtn').addEventListener('click', exportLogs);
+  document.getElementById('importLogsBtn').addEventListener('click', importLogs);
   document.getElementById('clearLogsBtn').addEventListener('click', clearAllLogs);
   document.getElementById('addSessionBtn').addEventListener('click', openAddSessionModal);
 
@@ -601,6 +602,204 @@ function exportLogs() {
   URL.revokeObjectURL(url);
   
   console.log('Logs exported successfully');
+}
+
+/**
+ * Import logs from CSV file
+ */
+function importLogs() {
+  // Create a hidden file input element
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.csv';
+  fileInput.multiple = true; // Allow multiple file selection
+  
+  fileInput.addEventListener('change', async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    
+    let totalImported = 0;
+    let totalSkipped = 0;
+    let errorCount = 0;
+    
+    for (const file of files) {
+      try {
+        const result = await importCSVFile(file);
+        totalImported += result.imported;
+        totalSkipped += result.skipped;
+      } catch (error) {
+        console.error(`Error importing file ${file.name}:`, error);
+        errorCount++;
+      }
+    }
+    
+    // Show summary message
+    let message = `Import complete!\n`;
+    if (totalImported > 0) message += `- ${totalImported} session(s) imported\n`;
+    if (totalSkipped > 0) message += `- ${totalSkipped} duplicate(s) skipped\n`;
+    if (errorCount > 0) message += `- ${errorCount} file(s) had errors`;
+    
+    alert(message);
+    
+    // Update UI
+    saveLogs();
+    renderLogs();
+    updateTotalWorkTimeDisplay();
+    refreshStatistics();
+  });
+  
+  // Trigger file selection
+  fileInput.click();
+}
+
+/**
+ * Import a single CSV file
+ * @param {File} file - CSV file to import
+ * @returns {Promise<Object>} Import results
+ */
+async function importCSVFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const csvText = e.target.result;
+        const result = parseCSVAndImport(csvText);
+        console.log(`Imported ${file.name}: ${result.imported} sessions, ${result.skipped} duplicates`);
+        resolve(result);
+      } catch (error) {
+        console.error(`Error parsing ${file.name}:`, error);
+        reject(error);
+      }
+    };
+    
+    reader.onerror = () => {
+      reject(new Error(`Failed to read file: ${file.name}`));
+    };
+    
+    reader.readAsText(file);
+  });
+}
+
+/**
+ * Parse CSV text and import sessions
+ * @param {string} csvText - CSV content
+ * @returns {Object} Import results with counts
+ */
+function parseCSVAndImport(csvText) {
+  const lines = csvText.trim().split('\n');
+  
+  // Check if there's at least a header and one data row
+  if (lines.length < 2) {
+    throw new Error('CSV file is empty or has no data');
+  }
+  
+  // Skip header row
+  const dataLines = lines.slice(1);
+  
+  let imported = 0;
+  let skipped = 0;
+  
+  for (const line of dataLines) {
+    if (!line.trim()) continue; // Skip empty lines
+    
+    try {
+      const session = parseCSVLine(line);
+      
+      // Check for duplicates (same timestamp)
+      const isDuplicate = sessionLogs.some(log => 
+        Math.abs(new Date(log.timestamp).getTime() - new Date(session.timestamp).getTime()) < 1000
+      );
+      
+      if (isDuplicate) {
+        skipped++;
+        console.log('Skipping duplicate session:', session.timestamp);
+      } else {
+        sessionLogs.push(session);
+        imported++;
+      }
+    } catch (error) {
+      console.error('Error parsing CSV line:', line, error);
+      // Continue with next line instead of failing completely
+    }
+  }
+  
+  // Sort logs by timestamp (newest first)
+  sessionLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  
+  return { imported, skipped };
+}
+
+/**
+ * Parse a single CSV line into a session object
+ * @param {string} line - CSV line
+ * @returns {Object} Session object
+ */
+function parseCSVLine(line) {
+  // Parse CSV with proper handling of quoted values
+  const values = [];
+  let currentValue = '';
+  let insideQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      // Check if it's an escaped quote
+      if (insideQuotes && line[i + 1] === '"') {
+        currentValue += '"';
+        i++; // Skip next quote
+      } else {
+        insideQuotes = !insideQuotes;
+      }
+    } else if (char === ',' && !insideQuotes) {
+      values.push(currentValue.trim());
+      currentValue = '';
+    } else {
+      currentValue += char;
+    }
+  }
+  
+  // Add the last value
+  values.push(currentValue.trim());
+  
+  // Expected format: Date,Time,Duration (s),Checkpoints,Break duration (s),Interval (s),Manual pauses,Completed
+  if (values.length < 8) {
+    throw new Error('Invalid CSV format: insufficient columns');
+  }
+  
+  const [dateStr, timeStr, durationStr, checkpointsStr, breakDurationStr, intervalStr, pausesStr, completedStr] = values;
+  
+  // Parse date and time
+  const dateObj = new Date(dateStr + ' ' + timeStr);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error('Invalid date/time format');
+  }
+  
+  // Parse numeric values
+  const duration = parseInt(durationStr, 10);
+  const checkpointsCount = parseInt(checkpointsStr, 10) || 0;
+  const checkpointDuration = parseInt(breakDurationStr, 10) || 0;
+  const checkpointInterval = parseInt(intervalStr, 10) || 0;
+  const pausesCount = parseInt(pausesStr, 10) || 0;
+  const completed = completedStr.toLowerCase() === 'yes' || completedStr.toLowerCase() === 'true';
+  
+  if (isNaN(duration) || duration <= 0) {
+    throw new Error('Invalid duration');
+  }
+  
+  return {
+    id: generateSessionId(),
+    timestamp: dateObj.toISOString(),
+    duration,
+    checkpointsCount,
+    checkpointDuration,
+    checkpointInterval,
+    pausesCount,
+    completed
+  };
 }
 
 /**

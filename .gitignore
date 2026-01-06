@@ -3,6 +3,9 @@ notes/
 *.notes.txt
 *.private.txt
 
+# CSV data directory - excluded to protect private session data
+csv_data/*.csv
+
 # Editor backup files
 *~
 *.swp

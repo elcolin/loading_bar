@@ -295,6 +295,21 @@ Click the "📥" button to export all your sessions in CSV format. The exported 
 
 **File format**: `session_logs_YYYY-MM-DD.csv`
 
+#### Import data
+
+Click the "📤" button to import one or more CSV files containing previously exported session logs. The import feature:
+- Supports multiple file selection for batch imports
+- Automatically validates CSV format and data integrity
+- Skips duplicate sessions (based on timestamp matching)
+- Merges imported sessions with existing data
+- Updates statistics graphs automatically
+
+**Recommended workflow**:
+1. Export your sessions regularly using the "📥" button
+2. Store CSV files in the `csv_data/` folder for easy access
+3. Import CSV files when needed to restore or consolidate data from different devices
+4. The `csv_data/` folder is excluded from Git to protect your privacy
+
 ### Using for Data Analysis
 
 The CSV format allows easy analysis with tools like:
