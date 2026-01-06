@@ -4,6 +4,11 @@
 
 let notificationPermissionGranted = false;
 
+// Initialize notification permission state on module load
+if ("Notification" in window && Notification.permission === "granted") {
+  notificationPermissionGranted = true;
+}
+
 /**
  * Check if notifications are supported and permission is granted
  * @returns {boolean}
@@ -71,7 +76,8 @@ export function sendNotification(title, body) {
     }
     
     try {
-      const notification = new Notification(title, options);
+      // Fire-and-forget notification - no need to store reference
+      new Notification(title, options);
       console.log("Notification created successfully");
     } catch (error) {
       console.error("Error creating notification:", error);
@@ -86,6 +92,7 @@ export function sendNotification(title, body) {
  */
 export function sendTestNotification() {
   if (notificationPermissionGranted && isNotificationSupported()) {
+    // Fire-and-forget notification - no need to store reference
     new Notification("Notifications enabled", {
       body: "You will receive notifications during checkpoint breaks.",
       icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"

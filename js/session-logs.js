@@ -267,6 +267,19 @@ function clearAllLogs() {
 }
 
 /**
+ * Generate a unique session ID
+ * @returns {string} Unique ID
+ */
+function generateSessionId() {
+  // Use crypto.randomUUID if available (modern browsers)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback to timestamp + random string with increased entropy
+  return Date.now() + '_' + Math.random().toString(36).substring(2, 11) + Math.random().toString(36).substring(2, 11);
+}
+
+/**
  * Start a new session
  * @param {number} totalSeconds - Total duration in seconds
  * @param {number} checkpointDuration - Checkpoint duration in seconds
@@ -274,7 +287,7 @@ function clearAllLogs() {
  */
 export function startNewSession(totalSeconds, checkpointDuration, checkpointInterval) {
   currentSession = {
-    id: Date.now() + '_' + Math.random().toString(36).substring(2, 11), // Unique ID
+    id: generateSessionId(),
     timestamp: new Date().toISOString(),
     duration: totalSeconds,
     checkpointsCount: 0,
