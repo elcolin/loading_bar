@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Minuteur avec barre de chargement</title>
+  <title>Timer with Loading Bar</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -308,31 +308,31 @@
 
 <div class="logs-panel">
   <div class="logs-header">
-    <span class="logs-title">📊 Historique des sessions</span>
+    <span class="logs-title">📊 Session History</span>
     <div class="logs-actions">
-      <button id="exportLogsBtn" title="Exporter les logs">📥</button>
-      <button id="clearLogsBtn" title="Effacer tous les logs">🗑️</button>
+      <button id="exportLogsBtn" title="Export logs">📥</button>
+      <button id="clearLogsBtn" title="Clear all logs">🗑️</button>
     </div>
   </div>
   
   <div class="logs-config">
-    <div class="logs-config-title">⚙️ Paramètres</div>
+    <div class="logs-config-title">⚙️ Settings</div>
     <label>
       <input type="checkbox" id="autoLogEnabled" checked>
-      Enregistrer automatiquement les sessions
+      Automatically record sessions
     </label>
     <label>
       <input type="checkbox" id="logCheckpoints" checked>
-      Inclure les détails des checkpoints
+      Include checkpoint details
     </label>
     <label>
       <input type="checkbox" id="logPauses" checked>
-      Enregistrer les pauses manuelles
+      Record manual pauses
     </label>
   </div>
   
   <div id="logsContainer">
-    <div class="logs-empty">Aucune session enregistrée</div>
+    <div class="logs-empty">No sessions recorded</div>
   </div>
 </div>
 
@@ -340,15 +340,15 @@
 <input id="timeInput" placeholder="Ex: 1h28m0s">
 
 <div class="checkpoint-config">
-  <div class="checkpoint-label">Configuration des pauses (checkpoint)</div>
-  <input id="checkpointDuration" placeholder="Durée pause: 5m">
-  <input id="checkpointInterval" placeholder="Intervalle: 25m">
+  <div class="checkpoint-label">Checkpoint breaks configuration</div>
+  <input id="checkpointDuration" placeholder="Break duration: 5m">
+  <input id="checkpointInterval" placeholder="Interval: 25m">
 </div>
 
-<button id="notificationBtn" class="secondary">Activer les notifications</button>
-<div class="checkpoint-label" id="notificationStatus" style="color: #ff9800; display: none;">⚠️ Activez les notifications pour recevoir des alertes</div>
+<button id="notificationBtn" class="secondary">Enable notifications</button>
+<div class="checkpoint-label" id="notificationStatus" style="color: #ff9800; display: none;">⚠️ Enable notifications to receive alerts</div>
 
-<button id="startBtn">Démarrer</button>
+<button id="startBtn">Start</button>
 
 <div style="display: flex; gap: 10px; justify-content: center;">
   <button id="pauseBtn" style="display: none; background: #ff9800;">Pause</button>
@@ -356,39 +356,39 @@
 </div>
 
   <div class="progress-section">
-    <div class="progress-label" id="checkpointLabel">Prochain checkpoint</div>
+    <div class="progress-label" id="checkpointLabel">Next checkpoint</div>
     <div class="bar-container">
       <div class="bar" id="bar"></div>
     </div>
   </div>
 
   <div class="progress-section">
-    <div class="progress-label">Temps total</div>
+    <div class="progress-label">Total time</div>
     <div class="bar-container">
       <div class="bar total" id="totalBar"></div>
     </div>
   </div>
 
   <div class="time" id="timeDisplay"></div>
-  <div class="time secondary" id="totalTimeDisplay" aria-label="Temps total restant"></div>
+  <div class="time secondary" id="totalTimeDisplay" aria-label="Total time remaining"></div>
 
   <div class="notes-section">
     <div class="notes-header" id="notesHeader">
-      <span>📝 Notes personnelles</span>
+      <span>📝 Personal notes</span>
       <span class="notes-toggle" id="notesToggle">▼</span>
     </div>
     <div class="notes-content" id="notesContent">
       <textarea 
         class="notes-textarea" 
         id="notesTextarea" 
-        placeholder="Écrivez vos notes ici... Elles sont automatiquement sauvegardées dans votre navigateur."></textarea>
+        placeholder="Write your notes here... They are automatically saved in your browser."></textarea>
       <div class="notes-actions">
-        <button id="exportNotesBtn">📥 Exporter les notes</button>
-        <button id="clearNotesBtn">🗑️ Effacer les notes</button>
+        <button id="exportNotesBtn">📥 Export notes</button>
+        <button id="clearNotesBtn">🗑️ Clear notes</button>
       </div>
       <div class="notes-info">
-        💡 Les notes sont sauvegardées automatiquement dans votre navigateur (localStorage).
-        Exportez-les dans un fichier pour les sauvegarder de manière permanente.
+        💡 Notes are automatically saved in your browser (localStorage).
+        Export them to a file to save them permanently.
       </div>
     </div>
   </div>
@@ -482,7 +482,7 @@ function exportNotes() {
   const notes = notesTextarea.value;
   
   if (!notes.trim()) {
-    alert('Aucune note à exporter.');
+    alert('No notes to export.');
     return;
   }
 
@@ -505,7 +505,7 @@ function exportNotes() {
 }
 
 function clearNotes() {
-  if (confirm('Êtes-vous sûr de vouloir effacer toutes vos notes ? Cette action est irréversible.')) {
+  if (confirm('Are you sure you want to delete all your notes? This action is irreversible.')) {
     const notesTextarea = document.getElementById('notesTextarea');
     notesTextarea.value = '';
     localStorage.removeItem(NOTES_STORAGE_KEY);
@@ -586,7 +586,7 @@ function addSessionLog(session) {
 }
 
 function deleteLog(logId) {
-  if (confirm('Supprimer cette session des logs ?')) {
+  if (confirm('Delete this session from logs?')) {
     const index = sessionLogs.findIndex(log => log.id === logId);
     if (index !== -1) {
       sessionLogs.splice(index, 1);
@@ -600,7 +600,7 @@ function renderLogs() {
   const container = document.getElementById('logsContainer');
   
   if (sessionLogs.length === 0) {
-    container.innerHTML = '<div class="logs-empty">Aucune session enregistrée</div>';
+    container.innerHTML = '<div class="logs-empty">No sessions recorded</div>';
     return;
   }
 
@@ -609,21 +609,27 @@ function renderLogs() {
   
   sessionLogs.forEach((log) => {
     const date = new Date(log.timestamp);
-    const dateStr = date.toLocaleDateString('fr-FR', { 
+    const dateStr = date.toLocaleDateString('en-US', { 
       day: '2-digit', 
       month: '2-digit', 
       year: 'numeric' 
     });
-    const timeStr = date.toLocaleTimeString('fr-FR', { 
+    const timeStr = date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
     
-    const durationMin = Math.floor(log.duration / 60);
+    const durationHours = Math.floor(log.duration / 3600);
+    const durationMin = Math.floor((log.duration % 3600) / 60);
     const durationSec = log.duration % 60;
-    const durationStr = durationMin > 0 
-      ? `${durationMin}m ${durationSec}s` 
-      : `${durationSec}s`;
+    let durationStr;
+    if (durationHours > 0) {
+      durationStr = `${durationHours}h ${durationMin}m ${durationSec}s`;
+    } else if (durationMin > 0) {
+      durationStr = `${durationMin}m ${durationSec}s`;
+    } else {
+      durationStr = `${durationSec}s`;
+    }
 
     const hasCheckpoints = log.checkpointsCount > 0;
     const checkpointClass = hasCheckpoints ? 'with-checkpoint' : '';
@@ -641,7 +647,7 @@ function renderLogs() {
     // Create duration detail
     const durationDetail = document.createElement('div');
     durationDetail.className = 'log-detail';
-    durationDetail.textContent = `⏱️ Durée: ${durationStr}`;
+    durationDetail.textContent = `⏱️ Duration: ${durationStr}`;
     logEntry.appendChild(durationDetail);
     
     if (hasCheckpoints && logsConfig.logCheckpoints) {
@@ -651,22 +657,38 @@ function renderLogs() {
       logEntry.appendChild(checkpointDetail);
       
       if (log.checkpointDuration) {
-        const cpMin = Math.floor(log.checkpointDuration / 60);
+        const cpHours = Math.floor(log.checkpointDuration / 3600);
+        const cpMin = Math.floor((log.checkpointDuration % 3600) / 60);
         const cpSec = log.checkpointDuration % 60;
-        const cpDur = cpMin > 0 ? `${cpMin}m ${cpSec}s` : `${cpSec}s`;
+        let cpDur;
+        if (cpHours > 0) {
+          cpDur = `${cpHours}h ${cpMin}m ${cpSec}s`;
+        } else if (cpMin > 0) {
+          cpDur = `${cpMin}m ${cpSec}s`;
+        } else {
+          cpDur = `${cpSec}s`;
+        }
         const cpDurationDetail = document.createElement('div');
         cpDurationDetail.className = 'log-detail';
-        cpDurationDetail.textContent = `⏸️ Durée pause: ${cpDur}`;
+        cpDurationDetail.textContent = `⏸️ Break duration: ${cpDur}`;
         logEntry.appendChild(cpDurationDetail);
       }
       
       if (log.checkpointInterval) {
-        const ciMin = Math.floor(log.checkpointInterval / 60);
+        const ciHours = Math.floor(log.checkpointInterval / 3600);
+        const ciMin = Math.floor((log.checkpointInterval % 3600) / 60);
         const ciSec = log.checkpointInterval % 60;
-        const ciDur = ciMin > 0 ? `${ciMin}m ${ciSec}s` : `${ciSec}s`;
+        let ciDur;
+        if (ciHours > 0) {
+          ciDur = `${ciHours}h ${ciMin}m ${ciSec}s`;
+        } else if (ciMin > 0) {
+          ciDur = `${ciMin}m ${ciSec}s`;
+        } else {
+          ciDur = `${ciSec}s`;
+        }
         const ciDetail = document.createElement('div');
         ciDetail.className = 'log-detail';
-        ciDetail.textContent = `🔄 Intervalle: ${ciDur}`;
+        ciDetail.textContent = `🔄 Interval: ${ciDur}`;
         logEntry.appendChild(ciDetail);
       }
     }
@@ -674,19 +696,19 @@ function renderLogs() {
     if (log.pausesCount > 0 && logsConfig.logPauses) {
       const pausesDetail = document.createElement('div');
       pausesDetail.className = 'log-detail';
-      pausesDetail.textContent = `⏸️ Pauses manuelles: ${log.pausesCount}`;
+      pausesDetail.textContent = `⏸️ Manual pauses: ${log.pausesCount}`;
       logEntry.appendChild(pausesDetail);
     }
 
     const statusDetail = document.createElement('div');
     statusDetail.className = 'log-detail';
-    statusDetail.textContent = log.completed ? '✅ Session complétée' : '⚠️ Session interrompue';
+    statusDetail.textContent = log.completed ? '✅ Session completed' : '⚠️ Session interrupted';
     logEntry.appendChild(statusDetail);
     
     // Create delete button
     const deleteBtn = document.createElement('div');
     deleteBtn.className = 'log-delete';
-    deleteBtn.textContent = '🗑️ Supprimer';
+    deleteBtn.textContent = '🗑️ Delete';
     deleteBtn.addEventListener('click', () => deleteLog(log.id));
     logEntry.appendChild(deleteBtn);
     
@@ -696,16 +718,16 @@ function renderLogs() {
 
 function exportLogs() {
   if (sessionLogs.length === 0) {
-    alert('Aucun log à exporter.');
+    alert('No logs to export.');
     return;
   }
 
   // Export as CSV for data analysis
-  const csvHeader = 'Date,Heure,Durée (s),Checkpoints,Durée pause (s),Intervalle (s),Pauses manuelles,Complétée\n';
+  const csvHeader = 'Date,Time,Duration (s),Checkpoints,Break duration (s),Interval (s),Manual pauses,Completed\n';
   const csvRows = sessionLogs.map(log => {
     const date = new Date(log.timestamp);
-    const dateStr = date.toLocaleDateString('fr-FR');
-    const timeStr = date.toLocaleTimeString('fr-FR');
+    const dateStr = date.toLocaleDateString('en-US');
+    const timeStr = date.toLocaleTimeString('en-US');
     
     // Helper function to escape CSV values
     const escapeCsv = (value) => {
@@ -725,7 +747,7 @@ function exportLogs() {
       log.checkpointDuration || 0,
       log.checkpointInterval || 0,
       log.pausesCount || 0,
-      log.completed ? 'Oui' : 'Non'
+      log.completed ? 'Yes' : 'No'
     ].join(',');
   }).join('\n');
 
@@ -746,7 +768,7 @@ function exportLogs() {
 }
 
 function clearAllLogs() {
-  if (confirm('Êtes-vous sûr de vouloir effacer tous les logs ? Cette action est irréversible.')) {
+  if (confirm('Are you sure you want to delete all logs? This action is irreversible.')) {
     sessionLogs = [];
     saveLogs();
     renderLogs();
@@ -803,14 +825,19 @@ document.getElementById("timeInput").addEventListener("keydown", (event) => {
 });
 
 function formatTime(seconds) {
-  const min = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const min = Math.floor((seconds % 3600) / 60);
   const sec = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${min.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+  }
   return `${min}:${sec.toString().padStart(2, "0")}`;
 }
 
 async function requestNotificationPermission() {
   if (!("Notification" in window)) {
-    alert("Ce navigateur ne supporte pas les notifications.");
+    alert("This browser does not support notifications.");
     return;
   }
 
@@ -819,25 +846,25 @@ async function requestNotificationPermission() {
     if (permission === "granted") {
       notificationPermissionGranted = true;
       document.getElementById("notificationStatus").style.display = "none";
-      document.getElementById("notificationBtn").textContent = "✓ Notifications activées";
+      document.getElementById("notificationBtn").textContent = "✓ Notifications enabled";
       document.getElementById("notificationBtn").style.background = "#4caf50";
-      new Notification("Notifications actives", {
-        body: "Vous recevrez une notification lors des pauses checkpoint.",
+      new Notification("Notifications enabled", {
+        body: "You will receive notifications during checkpoint breaks.",
         icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⏱️</text></svg>"
       });
     } else {
-      alert("Permission de notification refusée. Les notifications ne fonctionneront pas.");
+      alert("Notification permission denied. Notifications will not work.");
     }
   } catch (error) {
-    console.error("Erreur lors de la demande de permission:", error);
-    alert("Une erreur est survenue lors de la demande de permission.");
+    console.error("Error requesting notification permission:", error);
+    alert("An error occurred while requesting permission.");
   }
 }
 
 function sendNotification(title, body) {
-  console.log("sendNotification appelé:", title, body);
-  console.log("Permission accordée:", notificationPermissionGranted);
-  console.log("Notification API disponible:", "Notification" in window);
+  console.log("sendNotification called:", title, body);
+  console.log("Permission granted:", notificationPermissionGranted);
+  console.log("Notification API available:", "Notification" in window);
   
   if (notificationPermissionGranted && "Notification" in window) {
     const options = {
@@ -855,12 +882,12 @@ function sendNotification(title, body) {
     
     try {
       const notification = new Notification(title, options);
-      console.log("Notification créée avec succès");
+      console.log("Notification created successfully");
     } catch (error) {
-      console.error("Erreur lors de la création de la notification:", error);
+      console.error("Error creating notification:", error);
     }
   } else {
-    console.warn("Notifications non disponibles ou permission non accordée");
+    console.warn("Notifications not available or permission not granted");
   }
 }
 
@@ -922,11 +949,11 @@ function skipPhase() {
       const durationMin = Math.floor(checkpointDurationSeconds / 60);
       const durationSec = checkpointDurationSeconds % 60;
       const durationText = durationMin > 0 
-        ? `${durationMin} minute(s)${durationSec > 0 ? ` et ${durationSec} seconde(s)` : ''}`
-        : `${durationSec} seconde(s)`;
+        ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
+        : `${durationSec} second(s)`;
       console.log("Work phase skipped, starting checkpoint");
       incrementCheckpointCount();
-      sendNotification("Pause checkpoint !", `Prenez une pause de ${durationText}.`);
+      sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
     } else {
       console.log("No checkpoint configured, cannot skip work phase");
     }
@@ -941,7 +968,7 @@ function skipPhase() {
       const input = document.getElementById("timeInput").value.trim();
       totalSeconds = parseTime(input);
       if (!totalSeconds) {
-        alert("Format invalide. Utilise par exemple 5m, 1h ou 30s.");
+        alert("Invalid format. Use e.g., 5m, 1h, or 30s.");
         return;
       }
 
@@ -973,10 +1000,10 @@ function skipPhase() {
           // Warn if notifications are not enabled
           if (!notificationPermissionGranted) {
             document.getElementById("notificationStatus").style.display = "block";
-            alert("⚠️ Astuce : Cliquez sur 'Activer les notifications' pour recevoir des alertes lors des pauses checkpoint !");
+            alert("⚠️ Tip: Click 'Enable notifications' to receive alerts during checkpoint breaks!");
           }
         } else {
-          alert("Format de checkpoint invalide. Désactivation des checkpoints.");
+          alert("Invalid checkpoint format. Disabling checkpoints.");
           checkpointEnabled = false;
         }
       } else {
@@ -998,9 +1025,9 @@ function skipPhase() {
 
       // Update label based on checkpoint configuration
       if (checkpointEnabled) {
-        checkpointLabel.textContent = "Prochain checkpoint";
+        checkpointLabel.textContent = "Next checkpoint";
       } else {
-        checkpointLabel.textContent = "Progression";
+        checkpointLabel.textContent = "Progress";
       }
 
       interval = setInterval(() => {
@@ -1019,18 +1046,18 @@ function skipPhase() {
           const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
           totalBar.style.width = totalProgress + "%";
 
-          display.textContent = `Pause checkpoint : ${formatTime(checkpointRemaining)}`;
+          display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)}`;
 
           // Show total remaining time
-          totalDisplay.textContent = `Temps total restant : ${formatTime(remaining)}`;
+          totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
 
           if (checkpointRemaining <= 0) {
             // End checkpoint, resume work
             isInCheckpoint = false;
             workTimeElapsed = 0;
             bar.classList.remove("checkpoint");
-            sendNotification("Pause terminée !", "Reprise du travail. Bon courage !");
-            console.log("Checkpoint terminé, reprise du travail");
+            sendNotification("Break over!", "Back to work. Good luck!");
+            console.log("Checkpoint ended, resuming work");
           }
         } else {
           // Work timer
@@ -1047,16 +1074,16 @@ function skipPhase() {
             const timeUntilCheckpoint = Math.max(0, checkpointIntervalSeconds - workTimeElapsed);
             const checkpointProgress = ((workTimeElapsed) / checkpointIntervalSeconds) * 100;
             bar.style.width = checkpointProgress + "%";
-            display.textContent = `Prochain checkpoint dans : ${formatTime(timeUntilCheckpoint)}`;
+            display.textContent = `Next checkpoint in: ${formatTime(timeUntilCheckpoint)}`;
           } else {
             // No checkpoint, show total remaining time
             const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
             bar.style.width = progress + "%";
-            display.textContent = `Temps restant : ${formatTime(remaining)}`;
+            display.textContent = `Time remaining: ${formatTime(remaining)}`;
           }
 
           // Always show total remaining time in secondary display
-          totalDisplay.textContent = `Temps total restant : ${formatTime(remaining)}`;
+          totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
 
           // Check if checkpoint should trigger
           if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
@@ -1067,16 +1094,16 @@ function skipPhase() {
             const durationMin = Math.floor(checkpointDurationSeconds / 60);
             const durationSec = checkpointDurationSeconds % 60;
             const durationText = durationMin > 0 
-              ? `${durationMin} minute(s)${durationSec > 0 ? ` et ${durationSec} seconde(s)` : ''}`
-              : `${durationSec} seconde(s)`;
-            console.log("Checkpoint déclenché ! Notification envoyée.");
+              ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
+              : `${durationSec} second(s)`;
+            console.log("Checkpoint triggered! Notification sent.");
             incrementCheckpointCount();
-            sendNotification("Pause checkpoint !", `Prenez une pause de ${durationText}.`);
+            sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
           }
 
           if (remaining <= 0) {
             clearInterval(interval);
-            display.textContent = "Terminé.";
+            display.textContent = "Done.";
             totalDisplay.textContent = "";
             bar.style.width = "100%";
             totalBar.style.width = "100%";

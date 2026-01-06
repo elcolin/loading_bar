@@ -7,6 +7,8 @@ import { startNewSession, endSession, incrementCheckpointCount, incrementPauseCo
 
 let interval = null;
 let isPaused = false;
+let timerStartTime = 0; // Track when the timer actually started
+let elapsedBeforePause = 0; // Track elapsed time before pause
 
 // Checkpoint state
 let checkpointEnabled = false;
@@ -43,13 +45,18 @@ export function parseTime(value) {
 }
 
 /**
- * Format seconds to MM:SS
+ * Format seconds to HH:MM:SS or MM:SS
  * @param {number} seconds - Seconds to format
  * @returns {string} Formatted time
  */
 export function formatTime(seconds) {
-  const min = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const min = Math.floor((seconds % 3600) / 60);
   const sec = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${min.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+  }
   return `${min}:${sec.toString().padStart(2, "0")}`;
 }
 
@@ -60,14 +67,16 @@ export function togglePause() {
   const pauseBtn = document.getElementById("pauseBtn");
   
   if (isPaused) {
-    // Resume
+    // Resume - restart the timer from this point
     isPaused = false;
+    timerStartTime = Date.now();
     pauseBtn.textContent = "Pause";
     pauseBtn.style.background = "#ff9800";
     console.log("Timer resumed");
   } else {
-    // Pause
+    // Pause - accumulate elapsed time
     isPaused = true;
+    elapsedBeforePause += Date.now() - timerStartTime;
     pauseBtn.textContent = "Resume";
     pauseBtn.style.background = "#4caf50";
     incrementPauseCount();
@@ -155,6 +164,14 @@ export function startTimer() {
   // Start new session for logging
   startNewSession(totalSeconds, checkpointDurationSeconds, checkpointIntervalSeconds);
 
+  // Initialize timer tracking
+  timerStartTime = Date.now();
+  elapsedBeforePause = 0;
+
+  // Hide start button, show stop button
+  document.getElementById("startBtn").style.display = "none";
+  document.getElementById("stopBtn").style.display = "inline-block";
+  
   // Show pause and skip buttons
   document.getElementById("pauseBtn").style.display = "inline-block";
   document.getElementById("pauseBtn").textContent = "Pause";
@@ -260,7 +277,47 @@ export function startTimer() {
         totalBar.style.width = "100%";
         bar.classList.remove("checkpoint");
         endSession(true); // Session completed successfully
+        
+        // Reset buttons
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("stopBtn").style.display = "none";
+        document.getElementById("pauseBtn").style.display = "none";
+        document.getElementById("skipBtn").style.display = "none";
       }
     }
   }, 1000);
+}
+
+/**
+ * Stop the timer (manually interrupted)
+ */
+export function stopTimer() {
+  if (interval) {
+    clearInterval(interval);
+    interval = null;
+    
+    // Calculate actual elapsed time in seconds
+    const actualElapsedMs = elapsedBeforePause + (isPaused ? 0 : (Date.now() - timerStartTime));
+    const actualElapsedSeconds = Math.floor(actualElapsedMs / 1000);
+    
+    // End session with actual elapsed time instead of aimed time
+    endSession(false, actualElapsedSeconds);
+    
+    // Reset display
+    const display = document.getElementById("timeDisplay");
+    const totalDisplay = document.getElementById("totalTimeDisplay");
+    display.textContent = "Stopped.";
+    totalDisplay.textContent = "";
+    
+    // Reset buttons
+    document.getElementById("startBtn").style.display = "inline-block";
+    document.getElementById("stopBtn").style.display = "none";
+    document.getElementById("pauseBtn").style.display = "none";
+    document.getElementById("skipBtn").style.display = "none";
+    
+    // Reset pause state
+    isPaused = false;
+    
+    console.log(`Timer stopped. Elapsed time: ${actualElapsedSeconds}s`);
+  }
 }

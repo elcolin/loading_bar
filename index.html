@@ -50,6 +50,7 @@
 <div class="checkpoint-label" id="notificationStatus" style="color: #ff9800; display: none;">⚠️ Enable notifications to receive alerts</div>
 
 <button id="startBtn">Start</button>
+<button id="stopBtn" style="display: none; background: #f44336;">Stop</button>
 
 <div style="display: flex; gap: 10px; justify-content: center;">
   <button id="pauseBtn" style="display: none; background: #ff9800;">Pause</button>
@@ -92,6 +93,11 @@
         Export them to a file to save them permanently.
       </div>
     </div>
+  </div>
+
+  <div class="total-work-time">
+    <div class="total-work-time-label">📊 Total work time today:</div>
+    <div class="total-work-time-value" id="totalWorkTimeDisplay">0h 0m 0s</div>
   </div>
 
 </div>

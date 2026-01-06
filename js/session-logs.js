@@ -50,6 +50,9 @@ export function initializeSessionLogs() {
 
   // Render initial logs
   renderLogs();
+  
+  // Update total work time display
+  updateTotalWorkTimeDisplay();
 }
 
 /**
@@ -81,6 +84,7 @@ function addSessionLog(session) {
   sessionLogs.unshift(session); // Add to beginning
   saveLogs();
   renderLogs();
+  updateTotalWorkTimeDisplay();
   console.log('Session logged:', session);
 }
 
@@ -95,7 +99,60 @@ function deleteLog(logId) {
       sessionLogs.splice(index, 1);
       saveLogs();
       renderLogs();
+      updateTotalWorkTimeDisplay();
     }
+  }
+}
+
+/**
+ * Format duration in seconds to a human-readable string with hours, minutes, seconds
+ * @param {number} seconds - Duration in seconds
+ * @returns {string} Formatted duration string
+ */
+function formatDuration(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${secs}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  } else {
+    return `${secs}s`;
+  }
+}
+
+/**
+ * Calculate total work time for today
+ * @returns {number} Total seconds of work today
+ */
+function calculateTodayWorkTime() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+  
+  const totalSeconds = sessionLogs.reduce((total, log) => {
+    const logDate = new Date(log.timestamp);
+    logDate.setHours(0, 0, 0, 0); // Start of log date
+    
+    // Only count sessions from today
+    if (logDate.getTime() === today.getTime()) {
+      return total + log.duration;
+    }
+    return total;
+  }, 0);
+  
+  return totalSeconds;
+}
+
+/**
+ * Update the total work time display
+ */
+function updateTotalWorkTimeDisplay() {
+  const totalSeconds = calculateTodayWorkTime();
+  const display = document.getElementById('totalWorkTimeDisplay');
+  if (display) {
+    display.textContent = formatDuration(totalSeconds);
   }
 }
 
@@ -125,11 +182,7 @@ function renderLogs() {
       minute: '2-digit' 
     });
     
-    const durationMin = Math.floor(log.duration / 60);
-    const durationSec = log.duration % 60;
-    const durationStr = durationMin > 0 
-      ? `${durationMin}m ${durationSec}s` 
-      : `${durationSec}s`;
+    const durationStr = formatDuration(log.duration);
 
     const hasCheckpoints = log.checkpointsCount > 0;
     const checkpointClass = hasCheckpoints ? 'with-checkpoint' : '';
@@ -157,9 +210,7 @@ function renderLogs() {
       logEntry.appendChild(checkpointDetail);
       
       if (log.checkpointDuration) {
-        const cpMin = Math.floor(log.checkpointDuration / 60);
-        const cpSec = log.checkpointDuration % 60;
-        const cpDur = cpMin > 0 ? `${cpMin}m ${cpSec}s` : `${cpSec}s`;
+        const cpDur = formatDuration(log.checkpointDuration);
         const cpDurationDetail = document.createElement('div');
         cpDurationDetail.className = 'log-detail';
         cpDurationDetail.textContent = `⏸️ Break duration: ${cpDur}`;
@@ -167,9 +218,7 @@ function renderLogs() {
       }
       
       if (log.checkpointInterval) {
-        const ciMin = Math.floor(log.checkpointInterval / 60);
-        const ciSec = log.checkpointInterval % 60;
-        const ciDur = ciMin > 0 ? `${ciMin}m ${ciSec}s` : `${ciSec}s`;
+        const ciDur = formatDuration(log.checkpointInterval);
         const ciDetail = document.createElement('div');
         ciDetail.className = 'log-detail';
         ciDetail.textContent = `🔄 Interval: ${ciDur}`;
@@ -262,6 +311,7 @@ function clearAllLogs() {
     sessionLogs = [];
     saveLogs();
     renderLogs();
+    updateTotalWorkTimeDisplay();
     console.log('All logs cleared');
   }
 }
@@ -303,10 +353,15 @@ export function startNewSession(totalSeconds, checkpointDuration, checkpointInte
 /**
  * End the current session
  * @param {boolean} completed - Whether the session was completed
+ * @param {number} actualElapsedSeconds - Actual elapsed time (optional, for stopped sessions)
  */
-export function endSession(completed = true) {
+export function endSession(completed = true, actualElapsedSeconds = null) {
   if (currentSession) {
     currentSession.completed = completed;
+    // If actualElapsedSeconds is provided (stopped session), use it instead of the aimed duration
+    if (actualElapsedSeconds !== null) {
+      currentSession.duration = actualElapsedSeconds;
+    }
     addSessionLog(currentSession);
     currentSession = null;
   }

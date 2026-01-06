@@ -5,7 +5,7 @@
 import { initializeNotes } from './notes.js';
 import { initializeSessionLogs } from './session-logs.js';
 import { requestNotificationPermission, sendTestNotification } from './notifications.js';
-import { startTimer, togglePause, skipPhase } from './timer.js';
+import { startTimer, togglePause, skipPhase, stopTimer } from './timer.js';
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
   // Timer controls
   document.getElementById("startBtn").addEventListener("click", startTimer);
+  document.getElementById("stopBtn").addEventListener("click", stopTimer);
   document.getElementById("pauseBtn").addEventListener("click", togglePause);
   document.getElementById("skipBtn").addEventListener("click", skipPhase);
   

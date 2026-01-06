@@ -296,3 +296,26 @@ button.secondary {
 .notes-actions button:hover {
   background: #666;
 }
+
+.total-work-time {
+  margin-top: 30px;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 600px;
+  width: 90%;
+  border: 2px solid #4caf50;
+}
+
+.total-work-time-label {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 10px;
+}
+
+.total-work-time-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #4caf50;
+}
