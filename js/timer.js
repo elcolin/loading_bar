@@ -358,22 +358,19 @@ function startTimerInterval() {
       
       // Check if checkpoint break is complete
       if (checkpointRemaining <= 0) {
-        // Checkpoint break finished - pause and wait for user to start new work session
+        // Checkpoint break finished - automatically resume work
         isInCheckpoint = false;
-        isWaitingForSessionStart = true;
+        workTimeElapsed = 0; // Reset work time for next interval
         bar.classList.remove("checkpoint");
         bar.style.width = "0%";
         
-        // Update display
-        display.textContent = "Break over! Click 'Start Session' to continue working";
+        // Show "Start Checkpoint" button if checkpoints are enabled
+        if (checkpointEnabled) {
+          document.getElementById("startCheckpointBtn").style.display = "inline-block";
+        }
         
-        // Hide pause button, show start session button
-        document.getElementById("pauseBtn").style.display = "none";
-        document.getElementById("startSessionBtn").style.display = "inline-block";
-        document.getElementById("startCheckpointBtn").style.display = "none";
-        
-        sendNotification("Break over!", "Click 'Start Session' to continue working. Good luck!");
-        console.log("Checkpoint break ended, waiting for user to start new work session");
+        sendNotification("Break over!", "Back to work. Good luck!");
+        console.log("Checkpoint break ended, automatically resuming work");
       }
     } else {
       // Work timer
