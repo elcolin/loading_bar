@@ -297,8 +297,25 @@ function startTimerInterval() {
       const totalDisplay = document.getElementById("totalTimeDisplay");
       totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)} | Total work time: ${formatTime(cumulativeWorkTime)}`;
 
-      // Check if checkpoint should trigger - PAUSE and wait for user to start new session
-      if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
+      // Check if timer is complete first
+      if (remaining <= 0) {
+        clearInterval(interval);
+        interval = null;
+        display.textContent = "Done.";
+        totalDisplay.textContent = `Total work time: ${formatTime(cumulativeWorkTime)}`;
+        bar.style.width = "100%";
+        totalBar.style.width = "100%";
+        bar.classList.remove("checkpoint");
+        endSession(true); // Session completed successfully
+        clearTimerState();
+        
+        // Reset buttons
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("stopBtn").style.display = "none";
+        document.getElementById("pauseBtn").style.display = "none";
+        document.getElementById("startSessionBtn").style.display = "none";
+      } else if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
+        // Check if checkpoint should trigger - PAUSE and wait for user to start new session
         isWaitingForSessionStart = true;
         isInCheckpoint = true;
         bar.classList.add("checkpoint");
@@ -323,24 +340,6 @@ function startTimerInterval() {
         document.getElementById("startSessionBtn").style.display = "inline-block";
         
         sendNotification("Checkpoint reached!", `Take a break for ${durationText}. Click "Start Session" when ready to continue.`);
-      }
-
-      if (remaining <= 0) {
-        clearInterval(interval);
-        interval = null;
-        display.textContent = "Done.";
-        totalDisplay.textContent = `Total work time: ${formatTime(cumulativeWorkTime)}`;
-        bar.style.width = "100%";
-        totalBar.style.width = "100%";
-        bar.classList.remove("checkpoint");
-        endSession(true); // Session completed successfully
-        clearTimerState();
-        
-        // Reset buttons
-        document.getElementById("startBtn").style.display = "inline-block";
-        document.getElementById("stopBtn").style.display = "none";
-        document.getElementById("pauseBtn").style.display = "none";
-        document.getElementById("startSessionBtn").style.display = "none";
       }
     }
 
