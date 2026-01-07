@@ -116,8 +116,15 @@ export function restoreTimerState() {
   if (isWaitingForSessionStart) {
     document.getElementById("startSessionBtn").style.display = "inline-block";
     document.getElementById("pauseBtn").style.display = "none";
+    document.getElementById("startCheckpointBtn").style.display = "none";
   } else {
     document.getElementById("startSessionBtn").style.display = "none";
+    // Show "Start Checkpoint" button if checkpoints are enabled and not in checkpoint
+    if (checkpointEnabled && !isInCheckpoint) {
+      document.getElementById("startCheckpointBtn").style.display = "inline-block";
+    } else {
+      document.getElementById("startCheckpointBtn").style.display = "none";
+    }
   }
 
   if (isPaused) {
@@ -237,14 +244,60 @@ export function startSession() {
     bar.classList.remove("checkpoint");
     bar.style.width = "0%";
     
-    // Hide "Start Session" button and show "Pause" button
+    // Hide "Start Session" button and show "Pause" and "Start Checkpoint" buttons
     document.getElementById("startSessionBtn").style.display = "none";
     document.getElementById("pauseBtn").style.display = "inline-block";
+    
+    // Show "Start Checkpoint" button if checkpoints are enabled
+    if (checkpointEnabled) {
+      document.getElementById("startCheckpointBtn").style.display = "inline-block";
+    }
     
     console.log("New session started after checkpoint, resuming work");
     sendNotification("Session started!", "Back to work. Good luck!");
   } else {
     console.log("Not waiting for session start, nothing to do");
+  }
+}
+
+/**
+ * Manually start a checkpoint break during work session
+ */
+export function startCheckpoint() {
+  console.log("Start checkpoint called manually");
+  
+  // Only allow if we're in a work session (not paused, not already in checkpoint, not waiting for session start)
+  if (!isPaused && !isInCheckpoint && !isWaitingForSessionStart && checkpointEnabled) {
+    // Manually trigger checkpoint break
+    isInCheckpoint = true;
+    checkpointRemaining = checkpointDurationSeconds;
+    workTimeElapsed = 0; // Reset work time for next interval
+    
+    const bar = document.getElementById("bar");
+    bar.classList.add("checkpoint");
+    bar.style.width = "0%";
+    
+    const durationMin = Math.floor(checkpointDurationSeconds / 60);
+    const durationSec = checkpointDurationSeconds % 60;
+    const durationText = durationMin > 0 
+      ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
+      : `${durationSec} second(s)`;
+    
+    console.log("Manual checkpoint break started.");
+    incrementCheckpointCount();
+    checkpointSessionCount++;
+    registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
+    
+    // Update display
+    const display = document.getElementById("timeDisplay");
+    display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)} remaining`;
+    
+    // Hide start checkpoint button during break
+    document.getElementById("startCheckpointBtn").style.display = "none";
+    
+    sendNotification("Checkpoint break!", `Taking a manual break for ${durationText}.`);
+  } else {
+    console.log("Cannot start checkpoint: timer paused, already in checkpoint, or checkpoints not enabled");
   }
 }
 
@@ -258,10 +311,52 @@ function startTimerInterval() {
       return;
     }
     
-    // Work timer
-    remaining--;
-    workTimeElapsed++;
-    cumulativeWorkTime++;
+    if (isInCheckpoint) {
+      // Checkpoint break countdown timer
+      checkpointRemaining--;
+      remaining--;
+      
+      const bar = document.getElementById("bar");
+      const totalBar = document.getElementById("totalBar");
+      const display = document.getElementById("timeDisplay");
+      const totalDisplay = document.getElementById("totalTimeDisplay");
+      
+      // Update checkpoint progress bar (countdown)
+      const checkpointProgress = ((checkpointDurationSeconds - checkpointRemaining) / checkpointDurationSeconds) * 100;
+      bar.style.width = checkpointProgress + "%";
+      
+      // Update total progress bar
+      const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
+      totalBar.style.width = totalProgress + "%";
+      
+      // Display checkpoint break time remaining
+      display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)} remaining`;
+      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)} | Total work time: ${formatTime(cumulativeWorkTime)}`;
+      
+      // Check if checkpoint break is complete
+      if (checkpointRemaining <= 0) {
+        // Checkpoint break finished - pause and wait for user to start new work session
+        isInCheckpoint = false;
+        isWaitingForSessionStart = true;
+        bar.classList.remove("checkpoint");
+        bar.style.width = "0%";
+        
+        // Update display
+        display.textContent = "Break over! Click 'Start Session' to continue working";
+        
+        // Hide pause button, show start session button
+        document.getElementById("pauseBtn").style.display = "none";
+        document.getElementById("startSessionBtn").style.display = "inline-block";
+        document.getElementById("startCheckpointBtn").style.display = "none";
+        
+        sendNotification("Break over!", "Click 'Start Session' to continue working. Good luck!");
+        console.log("Checkpoint break ended, waiting for user to start new work session");
+      }
+    } else {
+      // Work timer
+      remaining--;
+      workTimeElapsed++;
+      cumulativeWorkTime++;
 
       // Update total progress bar
       const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
@@ -306,14 +401,15 @@ function startTimerInterval() {
         document.getElementById("stopBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "none";
         document.getElementById("startSessionBtn").style.display = "none";
+        document.getElementById("startCheckpointBtn").style.display = "none";
       } else if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
-        // Check if checkpoint should trigger - PAUSE and wait for user to start new session
-        // isWaitingForSessionStart: pauses the timer and shows "Start Session" button
-        // isInCheckpoint: changes bar color to orange to indicate checkpoint state
-        isWaitingForSessionStart = true;
+        // Checkpoint reached - automatically start the checkpoint break countdown
         isInCheckpoint = true;
+        checkpointRemaining = checkpointDurationSeconds;
+        workTimeElapsed = 0; // Reset work time for next interval
+        
         bar.classList.add("checkpoint");
-        bar.style.width = "100%"; // Show full progress at checkpoint
+        bar.style.width = "0%";
         
         const durationMin = Math.floor(checkpointDurationSeconds / 60);
         const durationSec = checkpointDurationSeconds % 60;
@@ -321,20 +417,20 @@ function startTimerInterval() {
           ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
           : `${durationSec} second(s)`;
         
-        console.log("Checkpoint reached! Pausing and waiting for user to start new session.");
+        console.log("Checkpoint reached! Starting automatic break countdown.");
         incrementCheckpointCount();
         checkpointSessionCount++;
         registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
         
-        // Update display to show checkpoint reached
-        display.textContent = `Checkpoint reached! Take a ${durationText} break`;
+        // Update display to show checkpoint break started
+        display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)} remaining`;
         
-        // Hide pause button, show start session button
-        document.getElementById("pauseBtn").style.display = "none";
-        document.getElementById("startSessionBtn").style.display = "inline-block";
+        // Hide start checkpoint button during break
+        document.getElementById("startCheckpointBtn").style.display = "none";
         
-        sendNotification("Checkpoint reached!", `Take a break for ${durationText}. Click "Start Session" when ready to continue.`);
+        sendNotification("Checkpoint break!", `Take a break for ${durationText}. The timer will pause when the break ends.`);
       }
+    }
 
     // Save state after each tick
     saveTimerState();
@@ -402,6 +498,13 @@ export function startTimer() {
   document.getElementById("pauseBtn").textContent = "Pause";
   document.getElementById("pauseBtn").style.background = "#ff9800";
   document.getElementById("startSessionBtn").style.display = "none";
+  
+  // Show "Start Checkpoint" button if checkpoints are enabled
+  if (checkpointEnabled) {
+    document.getElementById("startCheckpointBtn").style.display = "inline-block";
+  } else {
+    document.getElementById("startCheckpointBtn").style.display = "none";
+  }
 
   const bar = document.getElementById("bar");
   const totalBar = document.getElementById("totalBar");
@@ -459,6 +562,7 @@ export function stopTimer() {
     document.getElementById("stopBtn").style.display = "none";
     document.getElementById("pauseBtn").style.display = "none";
     document.getElementById("startSessionBtn").style.display = "none";
+    document.getElementById("startCheckpointBtn").style.display = "none";
     
     // Reset timer tracking variables
     isPaused = false;
