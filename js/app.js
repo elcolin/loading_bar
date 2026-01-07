@@ -6,7 +6,7 @@ import { initializeNotes } from './notes.js';
 import { initializeSessionLogs } from './session-logs.js';
 import { initializeStatistics } from './statistics.js';
 import { requestNotificationPermission, sendTestNotification } from './notifications.js';
-import { startTimer, togglePause, skipPhase, stopTimer, restoreTimerState } from './timer.js';
+import { startTimer, togglePause, startSession, stopTimer, restoreTimerState } from './timer.js';
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,7 +30,7 @@ function setupEventListeners() {
   document.getElementById("startBtn").addEventListener("click", startTimer);
   document.getElementById("stopBtn").addEventListener("click", stopTimer);
   document.getElementById("pauseBtn").addEventListener("click", togglePause);
-  document.getElementById("skipBtn").addEventListener("click", skipPhase);
+  document.getElementById("startSessionBtn").addEventListener("click", startSession);
   
   // Enter key to start timer
   document.getElementById("timeInput").addEventListener("keydown", (event) => {

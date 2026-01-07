@@ -19,10 +19,12 @@ let checkpointIntervalSeconds = 0;
 let isInCheckpoint = false;
 let checkpointRemaining = 0;
 let checkpointSessionCount = 0; // Track checkpoint number within current timer session
+let isWaitingForSessionStart = false; // Track if we're waiting for user to start a new session after checkpoint
 
 // Store timer state for pause/resume
 let totalSeconds = 0;
 let remaining = 0;
+let cumulativeWorkTime = 0; // Track cumulative work time across sessions
 
 /**
  * Save timer state to localStorage
@@ -46,6 +48,8 @@ function saveTimerState() {
     checkpointIntervalSeconds,
     isInCheckpoint,
     checkpointRemaining,
+    isWaitingForSessionStart,
+    cumulativeWorkTime,
     savedAt: Date.now()
   };
 
@@ -75,9 +79,11 @@ export function restoreTimerState() {
   checkpointIntervalSeconds = state.checkpointIntervalSeconds;
   isInCheckpoint = state.isInCheckpoint;
   checkpointRemaining = state.checkpointRemaining;
+  isWaitingForSessionStart = state.isWaitingForSessionStart || false;
+  cumulativeWorkTime = state.cumulativeWorkTime || 0;
 
   // Adjust remaining time based on elapsed time if not paused
-  if (!isPaused) {
+  if (!isPaused && !isWaitingForSessionStart) {
     if (isInCheckpoint) {
       checkpointRemaining = Math.max(0, state.checkpointRemaining - elapsedSinceSave);
       remaining = Math.max(0, state.remaining - elapsedSinceSave);
@@ -105,7 +111,14 @@ export function restoreTimerState() {
   document.getElementById("startBtn").style.display = "none";
   document.getElementById("stopBtn").style.display = "inline-block";
   document.getElementById("pauseBtn").style.display = "inline-block";
-  document.getElementById("skipBtn").style.display = "inline-block";
+  
+  // Show startSessionBtn if waiting for session start, hide otherwise
+  if (isWaitingForSessionStart) {
+    document.getElementById("startSessionBtn").style.display = "inline-block";
+    document.getElementById("pauseBtn").style.display = "none";
+  } else {
+    document.getElementById("startSessionBtn").style.display = "none";
+  }
 
   if (isPaused) {
     document.getElementById("pauseBtn").textContent = "Resume";
@@ -209,40 +222,29 @@ export function togglePause() {
 }
 
 /**
- * Skip current phase (work or checkpoint)
+ * Start a new session after checkpoint pause
  */
-export function skipPhase() {
-  console.log("Skip phase called. isInCheckpoint:", isInCheckpoint);
+export function startSession() {
+  console.log("Start session called. isWaitingForSessionStart:", isWaitingForSessionStart);
   
-  if (isInCheckpoint) {
-    // Skip checkpoint - go back to work
+  if (isWaitingForSessionStart) {
+    // Resume the timer after checkpoint break
+    isWaitingForSessionStart = false;
     isInCheckpoint = false;
     workTimeElapsed = 0;
-    checkpointRemaining = 0;
+    
     const bar = document.getElementById("bar");
     bar.classList.remove("checkpoint");
-    console.log("Checkpoint skipped, resuming work");
+    bar.style.width = "0%";
+    
+    // Hide "Start Session" button and show "Pause" button
+    document.getElementById("startSessionBtn").style.display = "none";
+    document.getElementById("pauseBtn").style.display = "inline-block";
+    
+    console.log("New session started after checkpoint, resuming work");
+    sendNotification("Session started!", "Back to work. Good luck!");
   } else {
-    // Skip work phase - trigger checkpoint if enabled, or do nothing
-    if (checkpointEnabled) {
-      isInCheckpoint = true;
-      checkpointRemaining = checkpointDurationSeconds;
-      const bar = document.getElementById("bar");
-      bar.classList.add("checkpoint");
-      bar.style.width = "0%";
-      const durationMin = Math.floor(checkpointDurationSeconds / 60);
-      const durationSec = checkpointDurationSeconds % 60;
-      const durationText = durationMin > 0 
-        ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
-        : `${durationSec} second(s)`;
-      console.log("Work phase skipped, starting checkpoint");
-      incrementCheckpointCount();
-      checkpointSessionCount++;
-      registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
-      sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
-    } else {
-      console.log("No checkpoint configured, cannot skip work phase");
-    }
+    console.log("Not waiting for session start, nothing to do");
   }
 }
 
@@ -251,42 +253,23 @@ export function skipPhase() {
  */
 function startTimerInterval() {
   interval = setInterval(() => {
-    // Skip timer updates if paused
-    if (isPaused) {
+    // Skip timer updates if paused or waiting for session start
+    if (isPaused || isWaitingForSessionStart) {
       return;
     }
     
     if (isInCheckpoint) {
-      // Checkpoint timer
-      checkpointRemaining--;
-      const progress = ((checkpointDurationSeconds - checkpointRemaining) / checkpointDurationSeconds) * 100;
+      // This code path shouldn't be reached with new behavior, but keeping for compatibility
+      // In the new behavior, we don't have checkpoint countdown - we pause immediately
+      isInCheckpoint = false;
+      workTimeElapsed = 0;
       const bar = document.getElementById("bar");
-      bar.style.width = progress + "%";
-
-      // Update total progress bar
-      const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
-      const totalBar = document.getElementById("totalBar");
-      totalBar.style.width = totalProgress + "%";
-
-      const display = document.getElementById("timeDisplay");
-      display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)}`;
-
-      // Show total remaining time
-      const totalDisplay = document.getElementById("totalTimeDisplay");
-      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
-
-      if (checkpointRemaining <= 0) {
-        // End checkpoint, resume work
-        isInCheckpoint = false;
-        workTimeElapsed = 0;
-        bar.classList.remove("checkpoint");
-        sendNotification("Break over!", "Back to work. Good luck!");
-        console.log("Checkpoint ended, resuming work");
-      }
+      bar.classList.remove("checkpoint");
     } else {
       // Work timer
       remaining--;
       workTimeElapsed++;
+      cumulativeWorkTime++;
 
       // Update total progress bar
       const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
@@ -312,31 +295,41 @@ function startTimerInterval() {
 
       // Always show total remaining time in secondary display
       const totalDisplay = document.getElementById("totalTimeDisplay");
-      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)}`;
+      totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)} | Total work time: ${formatTime(cumulativeWorkTime)}`;
 
-      // Check if checkpoint should trigger
+      // Check if checkpoint should trigger - PAUSE and wait for user to start new session
       if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
+        isWaitingForSessionStart = true;
         isInCheckpoint = true;
-        checkpointRemaining = checkpointDurationSeconds;
         bar.classList.add("checkpoint");
-        bar.style.width = "0%";
+        bar.style.width = "100%"; // Show full progress at checkpoint
+        
         const durationMin = Math.floor(checkpointDurationSeconds / 60);
         const durationSec = checkpointDurationSeconds % 60;
         const durationText = durationMin > 0 
           ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
           : `${durationSec} second(s)`;
-        console.log("Checkpoint triggered! Notification sent.");
+        
+        console.log("Checkpoint reached! Pausing and waiting for user to start new session.");
         incrementCheckpointCount();
         checkpointSessionCount++;
         registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
-        sendNotification("Checkpoint break!", `Take a break for ${durationText}.`);
+        
+        // Update display to show checkpoint reached
+        display.textContent = `Checkpoint reached! Take a ${durationText} break`;
+        
+        // Hide pause button, show start session button
+        document.getElementById("pauseBtn").style.display = "none";
+        document.getElementById("startSessionBtn").style.display = "inline-block";
+        
+        sendNotification("Checkpoint reached!", `Take a break for ${durationText}. Click "Start Session" when ready to continue.`);
       }
 
       if (remaining <= 0) {
         clearInterval(interval);
         interval = null;
         display.textContent = "Done.";
-        totalDisplay.textContent = "";
+        totalDisplay.textContent = `Total work time: ${formatTime(cumulativeWorkTime)}`;
         bar.style.width = "100%";
         totalBar.style.width = "100%";
         bar.classList.remove("checkpoint");
@@ -347,7 +340,7 @@ function startTimerInterval() {
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("stopBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "none";
-        document.getElementById("skipBtn").style.display = "none";
+        document.getElementById("startSessionBtn").style.display = "none";
       }
     }
 
@@ -412,11 +405,11 @@ export function startTimer() {
   document.getElementById("startBtn").style.display = "none";
   document.getElementById("stopBtn").style.display = "inline-block";
   
-  // Show pause and skip buttons
+  // Show pause button, hide start session button initially
   document.getElementById("pauseBtn").style.display = "inline-block";
   document.getElementById("pauseBtn").textContent = "Pause";
   document.getElementById("pauseBtn").style.background = "#ff9800";
-  document.getElementById("skipBtn").style.display = "inline-block";
+  document.getElementById("startSessionBtn").style.display = "none";
 
   const bar = document.getElementById("bar");
   const totalBar = document.getElementById("totalBar");
@@ -425,6 +418,8 @@ export function startTimer() {
   remaining = totalSeconds;
   workTimeElapsed = 0;
   isInCheckpoint = false;
+  isWaitingForSessionStart = false;
+  cumulativeWorkTime = 0; // Reset cumulative work time for new timer
   checkpointSessionCount = 0; // Reset checkpoint session count for new timer
   bar.style.width = "0%";
   totalBar.style.width = "0%";
@@ -468,13 +463,15 @@ export function stopTimer() {
     document.getElementById("startBtn").style.display = "inline-block";
     document.getElementById("stopBtn").style.display = "none";
     document.getElementById("pauseBtn").style.display = "none";
-    document.getElementById("skipBtn").style.display = "none";
+    document.getElementById("startSessionBtn").style.display = "none";
     
     // Reset timer tracking variables
     isPaused = false;
+    isWaitingForSessionStart = false;
     timerStartTime = 0;
     elapsedBeforePause = 0;
+    cumulativeWorkTime = 0;
     
-    console.log(`Timer stopped. Elapsed time: ${actualElapsedSeconds}s`);
+    console.log(`Timer stopped. Elapsed time: ${actualElapsedSeconds}s, Cumulative work time: ${cumulativeWorkTime}s`);
   }
 }
