@@ -261,9 +261,10 @@ export function startSession() {
 }
 
 /**
- * Format checkpoint duration to human-readable text
+ * Format checkpoint duration to human-readable text for notifications
+ * Note: This is different from formatTime() which formats as HH:MM:SS for timer display
  * @param {number} durationSeconds - Duration in seconds
- * @returns {string} Formatted duration text
+ * @returns {string} Formatted duration text (e.g., "5 minute(s)" or "1 minute(s) and 30 second(s)")
  */
 function formatCheckpointDuration(durationSeconds) {
   const durationMin = Math.floor(durationSeconds / 60);
@@ -333,6 +334,8 @@ function startTimerInterval() {
     
     if (isInCheckpoint) {
       // Checkpoint break countdown timer
+      // Both checkpointRemaining (for break timer) and remaining (for total timer) need to decrement
+      // since the total session time continues to count down during breaks
       checkpointRemaining--;
       remaining--;
       
