@@ -258,18 +258,10 @@ function startTimerInterval() {
       return;
     }
     
-    if (isInCheckpoint) {
-      // This code path shouldn't be reached with new behavior, but keeping for compatibility
-      // In the new behavior, we don't have checkpoint countdown - we pause immediately
-      isInCheckpoint = false;
-      workTimeElapsed = 0;
-      const bar = document.getElementById("bar");
-      bar.classList.remove("checkpoint");
-    } else {
-      // Work timer
-      remaining--;
-      workTimeElapsed++;
-      cumulativeWorkTime++;
+    // Work timer
+    remaining--;
+    workTimeElapsed++;
+    cumulativeWorkTime++;
 
       // Update total progress bar
       const totalProgress = ((totalSeconds - remaining) / totalSeconds) * 100;
@@ -316,6 +308,8 @@ function startTimerInterval() {
         document.getElementById("startSessionBtn").style.display = "none";
       } else if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
         // Check if checkpoint should trigger - PAUSE and wait for user to start new session
+        // isWaitingForSessionStart: pauses the timer and shows "Start Session" button
+        // isInCheckpoint: changes bar color to orange to indicate checkpoint state
         isWaitingForSessionStart = true;
         isInCheckpoint = true;
         bar.classList.add("checkpoint");
@@ -341,7 +335,6 @@ function startTimerInterval() {
         
         sendNotification("Checkpoint reached!", `Take a break for ${durationText}. Click "Start Session" when ready to continue.`);
       }
-    }
 
     // Save state after each tick
     saveTimerState();
@@ -446,6 +439,9 @@ export function stopTimer() {
     const actualElapsedMs = elapsedBeforePause + (isPaused ? 0 : (Date.now() - timerStartTime));
     const actualElapsedSeconds = Math.floor(actualElapsedMs / 1000);
     
+    // Save cumulative work time before resetting for logging
+    const finalCumulativeWorkTime = cumulativeWorkTime;
+    
     // End session with actual elapsed time instead of aimed time
     endSession(false, actualElapsedSeconds);
     
@@ -471,6 +467,6 @@ export function stopTimer() {
     elapsedBeforePause = 0;
     cumulativeWorkTime = 0;
     
-    console.log(`Timer stopped. Elapsed time: ${actualElapsedSeconds}s, Cumulative work time: ${cumulativeWorkTime}s`);
+    console.log(`Timer stopped. Elapsed time: ${actualElapsedSeconds}s, Cumulative work time: ${finalCumulativeWorkTime}s`);
   }
 }
