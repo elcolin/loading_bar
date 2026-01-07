@@ -261,6 +261,53 @@ export function startSession() {
 }
 
 /**
+ * Format checkpoint duration to human-readable text
+ * @param {number} durationSeconds - Duration in seconds
+ * @returns {string} Formatted duration text
+ */
+function formatCheckpointDuration(durationSeconds) {
+  const durationMin = Math.floor(durationSeconds / 60);
+  const durationSec = durationSeconds % 60;
+  return durationMin > 0 
+    ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
+    : `${durationSec} second(s)`;
+}
+
+/**
+ * Initialize checkpoint break state and UI
+ * @param {string} triggerType - "manual" or "automatic"
+ */
+function initializeCheckpointBreak(triggerType) {
+  isInCheckpoint = true;
+  checkpointRemaining = checkpointDurationSeconds;
+  workTimeElapsed = 0; // Reset work time for next interval
+  
+  const bar = document.getElementById("bar");
+  bar.classList.add("checkpoint");
+  bar.style.width = "0%";
+  
+  const durationText = formatCheckpointDuration(checkpointDurationSeconds);
+  
+  console.log(`${triggerType === 'manual' ? 'Manual' : 'Automatic'} checkpoint break started.`);
+  incrementCheckpointCount();
+  checkpointSessionCount++;
+  registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
+  
+  // Update display
+  const display = document.getElementById("timeDisplay");
+  display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)} remaining`;
+  
+  // Hide start checkpoint button during break
+  document.getElementById("startCheckpointBtn").style.display = "none";
+  
+  const notificationMessage = triggerType === 'manual'
+    ? `Taking a manual break for ${durationText}.`
+    : `Take a break for ${durationText}. The timer will pause when the break ends.`;
+  
+  sendNotification("Checkpoint break!", notificationMessage);
+}
+
+/**
  * Manually start a checkpoint break during work session
  */
 export function startCheckpoint() {
@@ -268,34 +315,7 @@ export function startCheckpoint() {
   
   // Only allow if we're in a work session (not paused, not already in checkpoint, not waiting for session start)
   if (!isPaused && !isInCheckpoint && !isWaitingForSessionStart && checkpointEnabled) {
-    // Manually trigger checkpoint break
-    isInCheckpoint = true;
-    checkpointRemaining = checkpointDurationSeconds;
-    workTimeElapsed = 0; // Reset work time for next interval
-    
-    const bar = document.getElementById("bar");
-    bar.classList.add("checkpoint");
-    bar.style.width = "0%";
-    
-    const durationMin = Math.floor(checkpointDurationSeconds / 60);
-    const durationSec = checkpointDurationSeconds % 60;
-    const durationText = durationMin > 0 
-      ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
-      : `${durationSec} second(s)`;
-    
-    console.log("Manual checkpoint break started.");
-    incrementCheckpointCount();
-    checkpointSessionCount++;
-    registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
-    
-    // Update display
-    const display = document.getElementById("timeDisplay");
-    display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)} remaining`;
-    
-    // Hide start checkpoint button during break
-    document.getElementById("startCheckpointBtn").style.display = "none";
-    
-    sendNotification("Checkpoint break!", `Taking a manual break for ${durationText}.`);
+    initializeCheckpointBreak('manual');
   } else {
     console.log("Cannot start checkpoint: timer paused, already in checkpoint, or checkpoints not enabled");
   }
@@ -404,31 +424,7 @@ function startTimerInterval() {
         document.getElementById("startCheckpointBtn").style.display = "none";
       } else if (checkpointEnabled && workTimeElapsed >= checkpointIntervalSeconds) {
         // Checkpoint reached - automatically start the checkpoint break countdown
-        isInCheckpoint = true;
-        checkpointRemaining = checkpointDurationSeconds;
-        workTimeElapsed = 0; // Reset work time for next interval
-        
-        bar.classList.add("checkpoint");
-        bar.style.width = "0%";
-        
-        const durationMin = Math.floor(checkpointDurationSeconds / 60);
-        const durationSec = checkpointDurationSeconds % 60;
-        const durationText = durationMin > 0 
-          ? `${durationMin} minute(s)${durationSec > 0 ? ` and ${durationSec} second(s)` : ''}`
-          : `${durationSec} second(s)`;
-        
-        console.log("Checkpoint reached! Starting automatic break countdown.");
-        incrementCheckpointCount();
-        checkpointSessionCount++;
-        registerCheckpointSession(checkpointSessionCount, checkpointDurationSeconds);
-        
-        // Update display to show checkpoint break started
-        display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)} remaining`;
-        
-        // Hide start checkpoint button during break
-        document.getElementById("startCheckpointBtn").style.display = "none";
-        
-        sendNotification("Checkpoint break!", `Take a break for ${durationText}. The timer will pause when the break ends.`);
+        initializeCheckpointBreak('automatic');
       }
     }
 
