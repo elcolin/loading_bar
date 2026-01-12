@@ -891,7 +891,7 @@ export function startNewSession(totalSeconds, checkpointDuration, checkpointInte
 /**
  * End the current session
  * @param {boolean} completed - Whether the session was completed
- * @param {number} actualWorkTimeSeconds - Actual work time in seconds (excluding checkpoint breaks)
+ * @param {number|null} actualWorkTimeSeconds - Actual work time in seconds (excluding checkpoint breaks), or null to use the session's original duration
  */
 export function endSession(completed = true, actualWorkTimeSeconds = null) {
   if (currentSession) {
