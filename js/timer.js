@@ -356,6 +356,9 @@ function startTimerInterval() {
       display.textContent = `Checkpoint break: ${formatTime(checkpointRemaining)} remaining`;
       totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)} | Total work time: ${formatTime(cumulativeWorkTime)}`;
       
+      // Update browser title to show checkpoint activity
+      document.title = `☕ Checkpoint Break (${formatTime(checkpointRemaining)}) - Timer`;
+      
       // Check if checkpoint break is complete
       if (checkpointRemaining <= 0) {
         // Checkpoint break finished - automatically resume work
@@ -403,6 +406,14 @@ function startTimerInterval() {
       // Always show total remaining time in secondary display
       const totalDisplay = document.getElementById("totalTimeDisplay");
       totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)} | Total work time: ${formatTime(cumulativeWorkTime)}`;
+      
+      // Update browser title to show work activity
+      if (checkpointEnabled) {
+        const timeUntilCheckpoint = Math.max(0, checkpointIntervalSeconds - workTimeElapsed);
+        document.title = `⏱️ Work (Next checkpoint: ${formatTime(timeUntilCheckpoint)}) - Timer`;
+      } else {
+        document.title = `⏱️ Work (${formatTime(remaining)}) - Timer`;
+      }
 
       // Check if timer is complete first
       if (remaining <= 0) {
@@ -413,8 +424,11 @@ function startTimerInterval() {
         bar.style.width = "100%";
         totalBar.style.width = "100%";
         bar.classList.remove("checkpoint");
-        endSession(true); // Session completed successfully
+        endSession(true, cumulativeWorkTime); // Session completed successfully with actual work time
         clearTimerState();
+        
+        // Reset browser title
+        document.title = "Timer with Loading Bar";
         
         // Reset buttons
         document.getElementById("startBtn").style.display = "inline-block";
@@ -538,11 +552,8 @@ export function stopTimer() {
     const actualElapsedMs = elapsedBeforePause + (isPaused ? 0 : (Date.now() - timerStartTime));
     const actualElapsedSeconds = Math.floor(actualElapsedMs / 1000);
     
-    // Save cumulative work time before resetting for logging
-    const finalCumulativeWorkTime = cumulativeWorkTime;
-    
-    // End session with actual elapsed time instead of aimed time
-    endSession(false, actualElapsedSeconds);
+    // End session with actual work time (excluding checkpoint breaks)
+    endSession(false, cumulativeWorkTime);
     
     // Clear the saved timer state
     clearTimerState();
@@ -552,6 +563,9 @@ export function stopTimer() {
     const totalDisplay = document.getElementById("totalTimeDisplay");
     display.textContent = "Stopped.";
     totalDisplay.textContent = "";
+    
+    // Reset browser title
+    document.title = "Timer with Loading Bar";
     
     // Reset buttons
     document.getElementById("startBtn").style.display = "inline-block";
@@ -565,8 +579,9 @@ export function stopTimer() {
     isWaitingForSessionStart = false;
     timerStartTime = 0;
     elapsedBeforePause = 0;
-    cumulativeWorkTime = 0;
     
-    console.log(`Timer stopped. Elapsed time: ${actualElapsedSeconds}s, Cumulative work time: ${finalCumulativeWorkTime}s`);
+    console.log(`Timer stopped. Cumulative work time: ${cumulativeWorkTime}s`);
+    
+    cumulativeWorkTime = 0;
   }
 }

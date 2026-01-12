@@ -891,15 +891,15 @@ export function startNewSession(totalSeconds, checkpointDuration, checkpointInte
 /**
  * End the current session
  * @param {boolean} completed - Whether the session was completed
- * @param {number} actualElapsedSeconds - Actual elapsed time (optional, for stopped sessions)
+ * @param {number} actualWorkTimeSeconds - Actual work time in seconds (excluding checkpoint breaks)
  */
-export function endSession(completed = true, actualElapsedSeconds = null) {
+export function endSession(completed = true, actualWorkTimeSeconds = null) {
   if (currentSession) {
     currentSession.completed = completed;
     currentSession.inProgress = false; // Mark session as no longer in progress
-    // If actualElapsedSeconds is provided (stopped session), use it instead of the aimed duration
-    if (actualElapsedSeconds !== null) {
-      currentSession.duration = actualElapsedSeconds;
+    // If actualWorkTimeSeconds is provided, use it as the actual work duration
+    if (actualWorkTimeSeconds !== null) {
+      currentSession.duration = actualWorkTimeSeconds;
     }
     addSessionLog(currentSession);
     currentSession = null;
