@@ -396,24 +396,22 @@ function startTimerInterval() {
         const checkpointProgress = ((workTimeElapsed) / checkpointIntervalSeconds) * 100;
         bar.style.width = checkpointProgress + "%";
         display.textContent = `Next checkpoint in: ${formatTime(timeUntilCheckpoint)}`;
+        
+        // Update browser title to show work activity
+        document.title = `⏱️ Work (Next checkpoint: ${formatTime(timeUntilCheckpoint)}) - Timer`;
       } else {
         // No checkpoint, show total remaining time
         const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
         bar.style.width = progress + "%";
         display.textContent = `Time remaining: ${formatTime(remaining)}`;
+        
+        // Update browser title to show work activity
+        document.title = `⏱️ Work (${formatTime(remaining)}) - Timer`;
       }
 
       // Always show total remaining time in secondary display
       const totalDisplay = document.getElementById("totalTimeDisplay");
       totalDisplay.textContent = `Total time remaining: ${formatTime(remaining)} | Total work time: ${formatTime(cumulativeWorkTime)}`;
-      
-      // Update browser title to show work activity
-      if (checkpointEnabled) {
-        const timeUntilCheckpoint = Math.max(0, checkpointIntervalSeconds - workTimeElapsed);
-        document.title = `⏱️ Work (Next checkpoint: ${formatTime(timeUntilCheckpoint)}) - Timer`;
-      } else {
-        document.title = `⏱️ Work (${formatTime(remaining)}) - Timer`;
-      }
 
       // Check if timer is complete first
       if (remaining <= 0) {
@@ -575,13 +573,12 @@ export function stopTimer() {
     document.getElementById("startCheckpointBtn").style.display = "none";
     
     // Reset timer tracking variables
+    console.log(`Timer stopped. Cumulative work time: ${cumulativeWorkTime}s`);
+    
     isPaused = false;
     isWaitingForSessionStart = false;
     timerStartTime = 0;
     elapsedBeforePause = 0;
-    
-    console.log(`Timer stopped. Cumulative work time: ${cumulativeWorkTime}s`);
-    
     cumulativeWorkTime = 0;
   }
 }
