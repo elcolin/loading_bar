@@ -20,8 +20,8 @@ export function initializeSync() {
  * @param {StorageEvent} event - Storage event
  */
 function handleStorageChange(event) {
-  // Ignore changes from the same window (null origin)
-  if (!event.storageArea) {
+  // Ignore changes from the same window
+  if (!event.url || event.url === window.location.href) {
     return;
   }
 
@@ -54,9 +54,15 @@ function reloadLogsConfig() {
       const logCheckpointsCheckbox = document.getElementById('logCheckpoints');
       const logPausesCheckbox = document.getElementById('logPauses');
       
-      if (autoLogCheckbox) autoLogCheckbox.checked = logsConfig.autoLogEnabled;
-      if (logCheckpointsCheckbox) logCheckpointsCheckbox.checked = logsConfig.logCheckpoints;
-      if (logPausesCheckbox) logPausesCheckbox.checked = logsConfig.logPauses;
+      if (autoLogCheckbox && logsConfig.autoLogEnabled !== undefined) {
+        autoLogCheckbox.checked = logsConfig.autoLogEnabled;
+      }
+      if (logCheckpointsCheckbox && logsConfig.logCheckpoints !== undefined) {
+        logCheckpointsCheckbox.checked = logsConfig.logCheckpoints;
+      }
+      if (logPausesCheckbox && logsConfig.logPauses !== undefined) {
+        logPausesCheckbox.checked = logsConfig.logPauses;
+      }
       
       console.log('Logs config reloaded from another window');
     }
