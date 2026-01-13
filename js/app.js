@@ -6,13 +6,15 @@ import { initializeNotes } from './notes.js';
 import { initializeSessionLogs } from './session-logs.js';
 import { initializeStatistics } from './statistics.js';
 import { requestNotificationPermission, sendTestNotification } from './notifications.js';
-import { startTimer, togglePause, startSession, startCheckpoint, stopTimer, restoreTimerState } from './timer.js';
+import { startTimer, togglePause, startSession, startCheckpoint, stopTimer, restoreTimerState, backToWork } from './timer.js';
+import { initializeSync } from './sync.js';
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   initializeNotes();
   initializeSessionLogs();
   initializeStatistics();
+  initializeSync();
   setupEventListeners();
   
   // Restore timer state if available
@@ -32,6 +34,7 @@ function setupEventListeners() {
   document.getElementById("pauseBtn").addEventListener("click", togglePause);
   document.getElementById("startSessionBtn").addEventListener("click", startSession);
   document.getElementById("startCheckpointBtn").addEventListener("click", startCheckpoint);
+  document.getElementById("backToWorkBtn").addEventListener("click", backToWork);
   
   // Enter key to start timer
   document.getElementById("timeInput").addEventListener("keydown", (event) => {
