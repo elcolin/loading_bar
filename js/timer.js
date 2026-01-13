@@ -341,7 +341,6 @@ export function backToWork() {
     // End checkpoint break immediately and resume work
     isInCheckpoint = false;
     workTimeElapsed = 0; // Reset work time for next interval
-    checkpointRemaining = 0;
     
     const bar = document.getElementById("bar");
     bar.classList.remove("checkpoint");
@@ -467,7 +466,7 @@ function startTimerInterval() {
         bar.classList.remove("checkpoint");
         
         // Send completion notification
-        sendNotification("Session complete!", `Timer finished! Total work time: ${formatTime(cumulativeWorkTime)}. Great job!`);
+        sendNotification("Session complete!", `Timer finished! Total work time: ${formatTime(cumulativeWorkTime)}`);
         
         endSession(true, cumulativeWorkTime); // Session completed successfully with actual work time
         clearTimerState();
