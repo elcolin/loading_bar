@@ -50,6 +50,7 @@ function saveTimerState() {
     checkpointRemaining,
     isWaitingForSessionStart,
     cumulativeWorkTime,
+    checkpointSessionCount,
     savedAt: Date.now()
   };
 
@@ -81,6 +82,7 @@ export function restoreTimerState() {
   checkpointRemaining = state.checkpointRemaining;
   isWaitingForSessionStart = state.isWaitingForSessionStart || false;
   cumulativeWorkTime = state.cumulativeWorkTime || 0;
+  checkpointSessionCount = state.checkpointSessionCount || 0;
 
   // Adjust remaining time based on elapsed time if not paused
   if (!isPaused && !isWaitingForSessionStart) {
@@ -356,6 +358,9 @@ export function backToWork() {
     
     sendNotification("Back to work!", "Break skipped. Good luck!");
     console.log("Checkpoint break skipped, resuming work");
+    
+    // Save the updated state
+    saveTimerState();
   } else {
     console.log("Not in checkpoint, nothing to skip");
   }
