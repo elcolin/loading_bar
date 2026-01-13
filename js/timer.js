@@ -343,6 +343,7 @@ export function backToWork() {
     // End checkpoint break immediately and resume work
     isInCheckpoint = false;
     workTimeElapsed = 0; // Reset work time for next interval
+    checkpointRemaining = 0; // Clear remaining time since break is skipped
     
     const bar = document.getElementById("bar");
     bar.classList.remove("checkpoint");
