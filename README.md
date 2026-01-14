@@ -21,19 +21,25 @@ An elegant web timer with progress bar, automatic breaks system (checkpoints), a
 
 To test the application locally with functional notifications:
 
-#### With Python 3
+#### With Python 3 (Custom Server - Recommended)
 
 ```bash
 # Clone the repository
 git clone https://github.com/elcolin/loading_bar.git
 cd loading_bar
 
-# Start the HTTP server
-python3 -m http.server 8000
+# Start the custom HTTP server (handles errors gracefully)
+python3 server.py 8000
 
 # Open in your browser
 # Chrome/Edge: http://localhost:8000/
 # Firefox: http://localhost:8000/
+```
+
+**Alternative**: Use Python's built-in server (may show error messages for client disconnections):
+
+```bash
+python3 -m http.server 8000
 ```
 
 #### With Node.js (http-server)
@@ -410,6 +416,8 @@ With this data, you can:
 loading_bar/
 ├── index.html          # Main HTML file
 ├── timer.html          # Legacy monolithic version (deprecated)
+├── server.py           # Custom HTTP server (handles errors gracefully)
+├── favicon.ico         # Browser favicon
 ├── css/
 │   └── styles.css      # All application styles
 ├── js/
@@ -421,6 +429,25 @@ loading_bar/
 │   └── storage.js      # LocalStorage utilities
 └── README.md          # This file
 ```
+
+### Custom HTTP Server
+
+The project includes a custom HTTP server (`server.py`) that improves upon Python's built-in `http.server` by:
+
+- **Gracefully handling client disconnections**: Suppresses `BrokenPipeError` exceptions that occur when browsers disconnect early
+- **Cleaner server logs**: No more stack traces for common browser behaviors
+- **Serving the favicon**: Includes a favicon.ico file to prevent 404 errors
+
+**Usage:**
+```bash
+# Default port (8000)
+python3 server.py
+
+# Custom port
+python3 server.py 3000
+```
+
+The server provides the same functionality as `python3 -m http.server` but with better error handling for production-like usage.
 
 ### Technologies Used
 
