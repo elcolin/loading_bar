@@ -16,6 +16,7 @@ import http.server
 import socketserver
 import sys
 import os
+import errno
 
 
 class QuietHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -99,7 +100,7 @@ def run_server(port=8000):
         print(f"Try using a port number above 1024, or run with sudo")
         sys.exit(1)
     except OSError as e:
-        if e.errno == 98:  # Address already in use
+        if e.errno == errno.EADDRINUSE:  # Address already in use
             print(f"Error: Port {port} is already in use")
             print(f"Try a different port or stop the process using port {port}")
         else:
