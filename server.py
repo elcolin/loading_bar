@@ -37,8 +37,8 @@ class QuietHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         and don't need to be logged as errors.
         """
         # Check if this is a BrokenPipeError or ConnectionResetError
-        if len(args) >= 1:
-            error_msg = str(args[0]) if args else ""
+        if args:
+            error_msg = str(args[0])
             if "Broken pipe" in error_msg or "Connection reset" in error_msg:
                 # Silently ignore these common client disconnect errors
                 return
@@ -103,6 +103,9 @@ def run_server(port=8000):
         if e.errno == errno.EADDRINUSE:  # Address already in use
             print(f"Error: Port {port} is already in use")
             print(f"Try a different port or stop the process using port {port}")
+        elif e.errno == errno.EACCES:  # Permission denied (on some systems)
+            print(f"Error: Permission denied to bind to port {port}")
+            print(f"Try using a port number above 1024, or run with sudo")
         else:
             print(f"Error: {e}")
         sys.exit(1)
