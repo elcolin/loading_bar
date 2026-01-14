@@ -35,8 +35,13 @@ class QuietHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         We still log other errors normally, but BrokenPipeError and
         ConnectionResetError are common when browsers disconnect early
         and don't need to be logged as errors.
+        
+        Note: We use string matching here because log_error receives
+        formatted error messages (strings), not exception objects.
+        The actual exception handling is done in finish() and
+        handle_one_request() methods.
         """
-        # Check if this is a BrokenPipeError or ConnectionResetError
+        # Check if this is a BrokenPipeError or ConnectionResetError message
         if args:
             error_msg = str(args[0])
             if "Broken pipe" in error_msg or "Connection reset" in error_msg:

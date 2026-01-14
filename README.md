@@ -436,7 +436,7 @@ The project includes a custom HTTP server (`server.py`) that improves upon Pytho
 
 - **Gracefully handling client disconnections**: Suppresses `BrokenPipeError` exceptions that occur when browsers disconnect early
 - **Cleaner server logs**: No more stack traces for common browser behaviors
-- **Serving the favicon**: Includes a favicon.ico file to prevent 404 errors
+- **Includes favicon.ico**: A favicon.ico file is provided to prevent 404 errors when browsers request it
 
 **Usage:**
 ```bash
